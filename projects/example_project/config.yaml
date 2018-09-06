@@ -1,0 +1,85 @@
+static_data:
+  data_path: /home/hw/Desktop/PeakDetection_dev/data/MTBLS105/GC_SIM_MS
+  high_resolution: False
+  cores: 4
+  peak_min_width: 0.5
+  peak_min_mz: 3
+  merging_RT_tol: 0.2 # add change!
+
+
+algorithms:
+  XCMS-CW: True
+  XCMS-MF: True
+
+
+default_configs:
+  XCMS-CW: XCMS-CW_default.INI
+  XCMS-MF: XCMS-MF_default.INI
+
+
+merging:
+  RT_tol: 0.2
+
+
+training_data-general:
+  training_samples: Training_samples
+  plots_per_sample: 250
+
+
+training_data-params:
+  XCMS-CW_pwMin: [1, 2.5, 5]
+  XCMS-CW_pwMax: [5, 7.5, 10]
+  XCMS-CW_mzdiff: [-0.1, 0, 0.1, 0.5]
+  XCMS-CW_ppm: [5, 10, 20]
+  XCMS-MF_fwhm: [2.5, 5, 7.5]
+  XCMS-MF_sn: [1, 2.5, 5]
+  XCMS-MF_mzdiff: [-0.1, 0, 0.1, 0.5]
+  XCMS-MF_step: [0.1, 0.25, 0.5]
+  XCMS-MF_steps: [1, 2, 3]
+
+
+classifier:
+  SVM: True
+  RF: False
+  validation_set_size: 0.2
+  cross_validation_splits: 3
+
+
+optimization-general:
+  optimization_samples: Optimization_samples
+
+
+optimization-score:
+  apex_left: 5
+  compound_related_peak: 10
+  apex_right: 5
+  merged_peak: -10
+  too_narrow_borders: -10
+  too_wide_borders: -10
+  noise: -10
+
+
+grid_search-params:
+  XCMS-CW_pwMin: [1, 2, 3, 4, 5]
+  XCMS-CW_pwMax: [2,3,4,5,6,7,8,9,10]
+  XCMS-CW_mzdiff: [-0.2, -0.1, 0, 0.1, 0.2]
+  XCMS-CW_ppm: [5, 8, 10, 13]
+  XCMS-MF_fwhm: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  XCMS-MF_sn: [0.5, 1, 2, 3, 4, 5, 10, 20, 30, 40, 50]
+  XCMS-MF_mzdiff: [-0.5, -0.2, -0.1, 0, 0.1, 0.2, 0.5]
+  XCMS-MF_step: [0.1, 0.2, 0.3, 0.4, 0.5]
+  XCMS-MF_steps: [1, 2, 3, 4, 5]
+
+
+retention_index:
+  calculate: False
+  wash: 
+  # alkanes: ['c10', 'c12', 'c15', 'c17', 'c19', 'c22', 'c28', 'c32', 'c36']
+  alkanes: ['c8', 'c9', 'c10', 'c12', 'c14', 'c16', 'c18', 'c20', 'c22', 'c24', 'c26', 'c28', 'c30']
+
+
+alignment:
+  RI_tol: 2
+  RT_tol: 7
+  min_similarity: 0.6
+  min_samples: 0.1

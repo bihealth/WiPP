@@ -1,0 +1,454 @@
+""" Snakefile for the second Pipeline part: the training of a classifier, 
+parameter optimization, actuall peak picking, merging to a high confidence peak
+set and cross-sample alignment.
+
+"""
+
+import sys
+import os
+# Add path to R and python libraries
+base_dir = os.path.split(os.path.split(os.getcwd())[0])[0]
+py_lib_dir = os.path.join(base_dir, 'lib', 'python')
+R_lib_dir = os.path.join(base_dir, 'lib', 'R')
+R_utils_file = os.path.join(R_lib_dir, 'utils.R')
+sys.path.append(py_lib_dir)
+# Import Pipeline modules
+import utils
+import peak_picking as pp
+import peak_alignment as pa
+
+# Load config file
+configfile: 'config.yaml'
+
+# proof check config data and get relevant data
+algorithms, sample_data, opt_data, wash_file = \
+    utils.evaluate_peakpicking_config(config)
+
+groupCorr_str = '' if not config['XCMS_params']['groupCorr'] else '--groupCorr'
+
+
+rule all:
+    input:
+        '04_Final_results/all_samples__final.csv'
+
+
+# ------------------------------------------------------------------------------
+# -------------------------------- CLASSIFIER ----------------------------------
+# ------------------------------------------------------------------------------
+
+
+rule train_classifier:
+    output:
+        '01_Classifier/{algorithm}__classifier.pkl'
+    params:
+        tr_dir = os.path.join(
+            config['static_data']['data_path'],
+            config['training_data-general']['training_samples']
+        ),
+        f_type = sample_data['type'],
+        val_set_ratio = config['classifier']['validation_set_size'],
+        cw_split = config['classifier']['cross_validation_splits'],
+        SVM = config['classifier']['SVM'],
+        RF = config['classifier']['RF']
+    threads:
+        config['static_data']['cores']
+    run:
+        old_clf_path = config.get('classifier', {}).get('path', False)
+        if old_clf_path:
+            pp.copy_classifier(old_clf_path, wildcards['algorithm'])
+        else:
+            pp.generate_classifier(
+                wildcards.algorithm,
+                params.tr_dir,
+                params.f_type,
+                validation_size=params.val_set_ratio,
+                cv=params.cw_split,
+                SVM=params.SVM,
+                RF=params.RF,
+                cores=threads
+            )
+
+
+# ------------------------------------------------------------------------------
+# --------------------------------- CENTWAVE -----------------------------------
+# ------------------------------------------------------------------------------
+
+rule run_grid_search_XCMS_CW:
+    input:
+        os.path.join(
+            config['static_data']['data_path'],
+            config['optimization-general']['optimization_samples'],
+            '{}.{}'.format('{XCMS_opt_file}', sample_data['type'])
+        )
+    output:
+        '02_Optimization/Grid_search/XCMS-CW/{XCMS_opt_file}__{parameter_CW}.csv'
+    params:
+        cores = 2,
+        groupCorr = groupCorr_str,
+        R_dir = R_lib_dir,
+        utils = R_utils_file,
+    run:
+        # Low res params
+        params.pwMin = re.search('par0-(\d+\.\d+|\d+)', wildcards.parameter_CW)\
+            .group(1)
+        params.pwMax = re.search('par1-(\d+\.\d+|\d+)', wildcards.parameter_CW) \
+            .group(1)
+        # High res params
+        if config['static_data'].get('high_resolution', False):
+            params.mzdiff = '--mzdiff {}'.format(
+                re.search('par2-{1}(-?\d+\.\d+|\d+)', wildcards.parameter_CW)\
+                    .group(1).replace('-', 'm')
+            )
+            params.ppm = '--ppm {}'.format(
+                re.search('par3-(\d+\.\d+|\d+)', wildcards.parameter_CW) \
+                    .group(1)
+            )
+        else:
+            params.mzdiff = ''
+            params.ppm = ''
+
+        shell(
+            'Rscript {params.R_dir}/run_XCMS-CW.R {input} {output} '
+            '--peakwidth {params.pwMin} {params.pwMax} '
+            '{params.mzdiff} {params.ppm} '
+            '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
+        )
+
+
+rule classify_grid_search_XCMS_CW:
+    input:
+        clf = '01_Classifier/XCMS-CW__classifier.pkl',
+        file = '02_Optimization/Grid_search/XCMS-CW/{XCMS_opt_file}__{parameter_CW}.csv',
+    output:
+        '02_Optimization/Classified/XCMS-CW/{XCMS_opt_file}__{parameter_CW}__classified.csv'
+    params:
+        raw_data = config['static_data']['data_path'],
+        f_type = sample_data['type']
+    run:
+        pp.classify_XCMS_peaks(
+            input.clf, input.file, output[0],
+            params.raw_data, wildcards.XCMS_opt_file, params.f_type
+        )
+
+
+rule evaluate_grid_search_XCMS_CW:
+    input:
+        expand(
+            '02_Optimization/Classified/XCMS-CW/{XCMS_opt_file}__{parameter_CW}__classified.csv',
+            XCMS_opt_file=opt_data['files'],
+            parameter_CW=opt_data['params']['XCMS-CW'],
+        )
+    output:
+        '02_Optimization/00__XCMS-CW__best_parameters.csv'
+    wildcard_constraints:
+        XCMS_opt_file = '.*(?!__)',
+        parameter_CW = '.*(?=__)'
+    params:
+        raw_data = config['static_data']['data_path'],
+        f_type = sample_data['type']
+    run:
+        pp.evaluate_grid_search(
+            input, output[0], 
+            params.raw_data, params.f_type, config['optimization-score']
+        )
+
+
+rule run_XCMS_CW_all:
+    input:
+        '02_Optimization/00__XCMS-CW__best_parameters.csv',
+    output:
+        '03_Peak_Picking/XCMS-CW/{XCMS_all_file}__peaks.csv',
+    params:
+        cores = 2,
+        groupCorr = groupCorr_str,
+        R_dir = R_lib_dir,
+        utils = R_utils_file
+    run:
+        with open(input[0], 'r') as f:
+            params_raw = f.read().strip()
+
+        params_dict = {
+            i.split('\t')[0]: i.split('\t')[1] for i in params_raw.split('\n')
+        }
+
+        params.pwMin = params_dict['par0']
+        params.pwMax = params_dict['par1']
+
+        # High res params
+        if config['static_data']['high_resolution']:
+            params.mzdiff = '--mzdiff {}'.format(
+                params_dict['par2'].replace('-', 'm')
+            )
+            params.ppm = '--ppm {}'.format(params_dict['par3'])
+        else:
+            params.mzdiff = ''
+            params.ppm = ''
+
+        params.raw_data_file = os.path.join(
+            config['static_data']['data_path'],
+            '{}.{}'.format(wildcards.XCMS_all_file, sample_data['type'])
+        )
+        shell(
+            'Rscript {params.R_dir}/run_XCMS-CW.R {params.raw_data_file} {output} '
+            '--peakwidth {params.pwMin} {params.pwMax} '
+            '{params.mzdiff} {params.ppm} '
+            '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
+        )
+
+
+rule classify_XCMS_CW:
+    input:
+        file = '03_Peak_Picking/XCMS-CW/{XCMS_all_file}__peaks.csv',
+        clf = '01_Classifier/XCMS-CW__classifier.pkl'
+    output:
+        '04_Final_results/00_Classified/XCMS-CW/{XCMS_all_file}__classified.csv'
+    params:
+        raw_data = config['static_data']['data_path'],
+        f_type = sample_data['type']
+    run:
+        pp.classify_XCMS_peaks(
+            input.clf, input.file, output[0],
+            params.raw_data, wildcards.XCMS_all_file, params.f_type
+        )
+
+
+# ------------------------------------------------------------------------------
+# ------------------------------- MATCHED FILTER -------------------------------
+# ------------------------------------------------------------------------------
+      
+rule run_grid_search_XCMS_MF:
+    input:
+        os.path.join(
+            config['static_data']['data_path'],
+            config['optimization-general']['optimization_samples'],
+            '{}.{}'.format('{XCMS_opt_file}', sample_data['type'])
+        )
+    output:
+        '02_Optimization/Grid_search/XCMS-MF/{XCMS_opt_file}__{parameter_MF}.csv'
+    params:
+        cores = 2,
+        groupCorr = groupCorr_str,
+        R_dir = R_lib_dir,
+        utils = R_utils_file,
+    run:
+        # Low res params
+        params.fwhm = re.search('par0-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
+            .group(1)
+        params.sn = re.search('par1-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
+            .group(1)
+        # Hgh res params
+        if config['static_data']['high_resolution']:
+            params.mzdiff = '--mzdiff {}'.format(
+                re.search('par2-{1}(-?\d+\.\d+|\d+)', wildcards.parameter_MF) \
+                    .group(1).replace('-', 'm')
+            )
+            params.step = '--step {}'.format(
+                re.search('par3-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
+                    .group(1)
+            )
+            params.steps = '--steps {}'.format(
+                re.search('par4-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
+                    .group(1)
+            )
+        else:
+            params.mzdiff = ''
+            params.step = ''
+            params.steps = ''
+
+        shell(
+            'Rscript {params.R_dir}/run_XCMS-MF.R {input} {output} '
+            '--fwhm {params.fwhm} --sn {params.sn} '
+            '{params.mzdiff} {params.step} {params.steps} '
+            '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
+        )
+
+
+rule classify_grid_search_XCMS_MF:
+    input:
+        clf = '01_Classifier/XCMS-MF__classifier.pkl',
+        file = '02_Optimization/Grid_search/XCMS-MF/{XCMS_opt_file}__{parameter_MF}.csv',
+    output:
+        '02_Optimization/Classified/XCMS-MF/{XCMS_opt_file}__{parameter_MF}__classified.csv'
+    params:
+        raw_data = config['static_data']['data_path'],
+        f_type = sample_data['type']
+    run:
+        sample_file = os.path.join(
+            config['optimization-general']['optimization_samples'],
+            wildcards.XCMS_opt_file
+        )
+        pp.classify_XCMS_peaks(
+            input.clf, input.file, output[0],
+            params.raw_data, sample_file, params.f_type
+        )
+
+
+rule evaluate_grid_search_XCMS_MF:
+    input:
+        expand(
+            '02_Optimization/Classified/XCMS-MF/{XCMS_opt_file}__{parameter_MF}__classified.csv',
+            XCMS_opt_file=opt_data['files'],
+            parameter_MF=opt_data['params']['XCMS-MF'],
+        )
+    output:
+        '02_Optimization/00__XCMS-MF__best_parameters.csv'
+    wildcard_constraints:
+        XCMS_opt_file = '.*(!?__par)',
+        parameter_MF = 'par.*(!?__)'
+    params:
+        raw_data = config['static_data']['data_path'],
+        f_type = sample_data['type']
+    run:
+        pp.evaluate_grid_search(
+            input, output[0], 
+            params.raw_data, params.f_type, config['optimization-score']
+        )
+
+
+rule run_XCMS_MF_all:
+    input:
+        '02_Optimization/00__XCMS-MF__best_parameters.csv'
+    output:
+        '03_Peak_Picking/XCMS-MF/{XCMS_all_file}__peaks.csv',
+    params:
+        cores = 2,
+        groupCorr = groupCorr_str,
+        R_dir = R_lib_dir,
+        utils = R_utils_file
+    run:
+        with open(input[0], 'r') as f:
+            params_raw = f.read().split('\n')
+        params.fwhm = params_raw[0].split('\t')[1]
+        params.sn = params_raw[1].split('\t')[1]
+        if config['static_data']['high_resolution']:
+            params.mzdiff = '--mzdiff {}' \
+                .format(params_raw[2].split('\t')[1].replace('-', 'm'))
+            params.step = '--step {}'.format(params_raw[3].split('\t')[1])
+            params.steps = '--steps {}'.format(params_raw[4].split('\t')[1])
+        else:
+            params.mzdiff = ''
+            params.step = ''
+            params.steps = ''
+
+        params.raw_data_file = os.path.join(
+            config['static_data']['data_path'],
+            '{}.{}'.format(wildcards.XCMS_all_file, sample_data['type'])
+        )
+
+        shell(
+            'Rscript {params.R_dir}/run_XCMS-MF.R '
+            '{params.raw_data_file} {output} '
+            '--fwhm {params.fwhm} --sn {params.sn} '
+            '{params.mzdiff} {params.step} {params.steps} '
+            '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
+        )
+
+
+rule classify_XCMS_MF:
+    input:
+        clf = '01_Classifier/XCMS-MF__classifier.pkl',
+        file = '03_Peak_Picking/XCMS-MF/{XCMS_all_file}__peaks.csv',
+    output:
+        '04_Final_results/00_Classified/XCMS-MF/{XCMS_all_file}__classified.csv'
+    params:
+        raw_data = config['static_data']['data_path'],
+        f_type = sample_data['type']
+    run:
+        pp.classify_XCMS_peaks(
+            input.clf, input.file, output[0],
+            params.raw_data, wildcards.XCMS_all_file, params.f_type
+        )
+
+
+# ------------------------------------------------------------------------------
+# ------------------------------- ALL ALGORITHMS -------------------------------
+# ------------------------------------------------------------------------------
+
+rule merge_all:
+    input:
+        expand(
+            '04_Final_results/00_Classified/{algorithm}/{{XCMS_all_file}}__classified.csv',
+            algorithm=algorithms
+        )
+    output:
+        '04_Final_results/01_Merged/{XCMS_all_file}__merged.csv'
+    params:
+        raw_data = config['static_data']['data_path'],
+        f_type = sample_data['type'],
+        peak_min_width = config['static_data']['peak_min_width'],
+        peak_min_mz = config['static_data']['peak_min_mz'],
+        tolerance = config['merging']['RT_tol']
+    run:
+        pp.merge_detected_peaks(
+            input, output[0], params.raw_data, params.f_type,
+            params.tolerance, params.peak_min_width, params.peak_min_mz
+        )
+
+
+if config['retention_index']['calculate']:
+    align_tol = config['alignment']['RI_tol']
+    align_files = '04_Final_results/02_RetentionIndex/{XCMS_all_file}__merged_RI.csv'
+
+    rule calc_retention_index:
+        input:
+            sample = '04_Final_results/01_Merged/{XCMS_all_file}__merged.csv',
+            wash = '04_Final_results/01_Merged/{}__merged.csv'.format(wash_file)
+        output:
+            '04_Final_results/02_RetentionIndex/{XCMS_all_file}__merged_RI.csv'
+        params:
+            raw_data = config['static_data']['data_path'],
+            f_type = sample_data['type'],
+            alkanes = config['retention_index']['alkanes']
+        run:
+            pa.calc_RI_with_wash(
+                input.sample, output[0], input.wash, params.alkanes
+            )
+else:
+    align_tol = config['alignment']['RT_tol']
+    align_files = '04_Final_results/01_Merged/{XCMS_all_file}__merged.csv'
+
+
+rule align_across_groups:
+    input:
+        expand(
+            align_files,
+            XCMS_all_file=sample_data['files']
+        )
+    output:
+        '04_Final_results/{group}__final.csv'
+    params:
+        tolerance = align_tol,
+        min_samples = config['alignment']['min_samples'],
+        min_sim = config['alignment']['min_similarity']
+    run:
+        in_files = [i for i in input if wildcards.group in utils.split_path(i)]
+        pa.align_across_samples(
+            in_files, output[0],
+            params.tolerance, params.min_samples, params.min_sim,
+            config['retention_index']['calculate']
+        )
+
+
+rule align_across_all:
+    input:
+        expand(
+            '04_Final_results/{group}__final.csv',
+            group=sample_data['groups']
+        )
+    output:
+        '04_Final_results/all_samples__final.csv'
+    wildcard_constraints:
+        group = '(?<=01_Merged/).*(?=__final)'
+    params:
+        tolerance = align_tol,
+        min_samples = config['alignment']['min_samples'],
+        min_sim = config['alignment']['min_similarity']
+    run:
+        in_files = [
+            align_files.format(XCMS_all_file=i) for i in sample_data['files']
+        ]
+        pa.align_across_samples(
+            in_files, output[0],
+            params.tolerance, params.min_samples, params.min_sim,
+            config['retention_index']['calculate']
+        )
