@@ -272,7 +272,7 @@ class AlignedPeaks():
             ).flatten()
             # No match
             if match.size == 0:
-                add_peaks = add_peaks.append(peak)
+                add_peaks = add_peaks.append(peak, sort=False)
                 continue
             # matches exactly one peak
             elif match.size == 1:
@@ -300,9 +300,9 @@ class AlignedPeaks():
                 )
                 to_merge = peak[new_cols]
                 to_merge.name = idx_match
-                merge_peaks = merge_peaks.append(to_merge)
+                merge_peaks = merge_peaks.append(to_merge, sort=False)
             else:
-                add_peaks = add_peaks.append(peak)
+                add_peaks = add_peaks.append(peak, sort=False)
 
         merge_peaks.reset_index(inplace=True)
         dupl_match_idx = merge_peaks.duplicated(subset=['index'], keep=False)
@@ -318,11 +318,11 @@ class AlignedPeaks():
                     sims.append((sim, idx_dupl_peak))
                 drop = [i[1] for i in sorted(sims)[:-1]]
                 merge_peaks.drop(drop, inplace=True)
-   
+        
         self.data = self.data.merge(
             merge_peaks, how='outer', left_index=True, right_on='index'
         ).drop('index',axis=1)
-        self.data = self.data.append(add_peaks)
+        self.data = self.data.append(add_peaks, sort=False)
         self.data = self.data.sort_values(merge_col).reset_index(drop=True)
         
 
@@ -361,7 +361,10 @@ class AlignedPeaks():
             for col_name, sample_spec in peak.items():
                 if isinstance(sample_spec, str) and not col_name == ref_col:
                     sims.append(_get_similarity(ref_spec, sample_spec))
-            return np.mean(sims).round(5)
+            if sims:
+                return np.mean(sims).round(5)
+            else:
+                return np.nan
 
         # Calculate similarity: single sample vs. all samples
         for idx, sample_col in enumerate(spec_cols):

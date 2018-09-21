@@ -113,7 +113,7 @@ def _plot_peaks(peaks, sample, out_dir, cores):
                 time.sleep(0.5)
             else:
                 break
-
+                
         single_peak_process = multiprocessing.Process(
             target=sample.plot_peak, args=(rt, out_path,)
         )

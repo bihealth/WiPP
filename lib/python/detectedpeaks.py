@@ -96,7 +96,7 @@ class DetectedPeaks():
 
 
     def get_concatenated(self):
-         """ Returns:
+        """ Returns:
             pd.DataFrame: detected peaks that were concatenated during processing.
 
         """
@@ -113,7 +113,7 @@ class DetectedPeaks():
 
 
     def get_param_str(self):
-         """ Returns:
+        """ Returns:
                 str: the algorithm parameters used for peak picking
 
         """
@@ -258,12 +258,10 @@ class DetectedPeaks():
                     i.replace('_{}'.format(idx), '') for i in peak_cols
                 ]
 
-                try:
-                    self.concatenated.loc[
-                        peak_col_data.index, 'mz_spectrum_{}'.format(idx)
-                    ] = self._get_data_spectra(peak_col_data, sample)
-                except:
-                    import pdb; pdb.set_trace()
+                self.concatenated.loc[
+                    peak_col_data.index, 'mz_spectrum_{}'.format(idx)
+                ] = self._get_data_spectra(peak_col_data, sample)
+
                 self.concatenated \
                     .loc[peak_col_data.index, 'mz_spectrum_norm_{}'.format(idx)] \
                         = self._get_data_spectra_normalized(
@@ -372,7 +370,7 @@ class DetectedPeaks():
                 (self.data['rt'] >= old_alk[0]) & (self.data['rt'] <= alk[0])
             ]
             new_RI = scale_range(aff_peaks['rt'], old_alk, alk)
-            RI = RI.append(new_RI)
+            RI = RI.append(new_RI, sort=False)
             old_alk = alk
 
         self.data['RI'] = RI.dropna().drop_duplicates()
@@ -390,11 +388,12 @@ class DetectedPeaks():
         if 'class' in self.data.columns and 'class' in peaks2.get_data().columns:
             self.data, concatenated, dropped = \
                 self._join_classified_data(peaks2, tol)
-            self.concatenated = self.concatenated.append(concatenated)
-            self.dropped = self.dropped.append(dropped)
+
+            self.concatenated = self.concatenated.append(concatenated, sort=False)
+            self.dropped = self.dropped.append(dropped, sort=False)
         else:
             self.data, dropped = self._join_unclassified_data(peaks2, tol)
-            self.dropped = self.dropped.append(dropped)
+            self.dropped = self.dropped.append(dropped, sort=False)
             self.stats = pd.concat(
                 [self.stats, peaks2.get_stats()], axis = 1
             )
@@ -405,7 +404,7 @@ class DetectedPeaks():
 
 
     def _join_unclassified_data(self, peaks2, tol):
-        new_data = self.data.append(peaks2.get_data())
+        new_data = self.data.append(peaks2.get_data(), sort=false)
         match_cols = ['rt', 'rtmin', 'rtmax']
         # Remove duplicates
         duplicates = new_data.duplicated(subset=match_cols, keep=False)
@@ -431,38 +430,33 @@ class DetectedPeaks():
             merged_peak = self._merge_peaks(
                 data.loc[[idx[0], idx[1]]], data.index.max() + 1
             )
-            print(data.shape)
-            data = data.append(merged_peak, ignore_index=True)
-            print(data.shape)
+            data = data.append(merged_peak, ignore_index=True, sort=False)
             drop.extend(list(idx))
-        try:
-            return (data.drop(drop), data.loc[drop])
-        except:
-            import pdb; pdb.set_trace()
+        return (data.drop(drop), data.loc[drop])
+
 
 
 
     def _join_classified_data(self, peaks2, tol):
-        new_data_all = self.data.append(peaks2.get_data())
+        new_data_all = self.data.append(peaks2.get_data(), sort=False)
         match_cols = ['rt', 'rtmin', 'rtmax']
         # Save and remove peaks classified as noise
         fp = new_data_all['class'] == 9
         new_data = new_data_all[~fp]
         # Remove duplicates
         duplicates = new_data.duplicated(subset=match_cols, keep=False)
-        new_data.loc[duplicates, 'parameters'] = \
-            new_data.loc[duplicates, 'parameters'] + peaks2.get_param_str()
+        new_data.loc[duplicates]['parameters'] += peaks2.get_param_str()
         if duplicates.any():
             print(
                 'Possibly problematic: duplicates while merging\n{}\tand\t{}' \
                     .format(self.get_sample_name(), peaks2.get_sample_name())
             )
-        new_data.drop_duplicates(subset=match_cols, inplace=True)
+        new_data = new_data.drop_duplicates(subset=match_cols)
         # Actual merging, concatenating and dropping (see function)
         new_data = self._sort_and_idx_reset(new_data, match_cols)
         new_data, concatenated, dropped = self._merging_classified(new_data, tol)
         # Add peaks classified as boise to dropped ones
-        dropped = dropped.append(new_data_all[fp])
+        dropped = dropped.append(new_data_all[fp], sort=False)
         dropped['reason'].fillna('noise', inplace=True)
         return (new_data, concatenated, dropped)
        
@@ -525,8 +519,7 @@ class DetectedPeaks():
 
     def _merge_peak_overlap(self, data, overlap_idx):
         # Merge peaks depending on classes
-        drop_idx = []
-        drop_reason = []
+        drop_dict = {}
         add_df = pd.DataFrame()
         for idx in overlap_idx:
             if -1 in idx:
@@ -538,59 +531,55 @@ class DetectedPeaks():
             # Keep merged peaks
             if peak_1['class'] == 5 or peak_2['class'] == 5:
                 drop, concat = self._concat_peaks(data.loc[[idx[0], idx[1]]])
-                drop_idx.append(drop)
-                drop_reason.append('concatenated')
-                add_df = add_df.append(concat)
+                drop_dict[drop] = 'concatenated'
+                add_df = add_df.append(concat, sort=False)
             # Merge same peaks (if not classified as merged)
             elif peak_1['class'] == peak_2['class']:
-                drop_idx.extend([peak_1.name, peak_2.name])
-                drop_reason.extend(['merged', 'merged'])
+                drop_dict[peak_1.name] = 'merged'
+                drop_dict[peak_2.name] = 'merged'
                 data = data.append(
                     self._merge_peaks(
                         data.loc[[idx[0], idx[1]]], data.index.max() + 1
-                    )
+                    ), sort=False
                 )   
             # Keep real compound related peaks
             elif peak_1['class'] == 2:
-                drop_idx.append(peak_2.name)
-                drop_reason.append('other_2')
+                drop_dict[peak_2.name] = 'other_2'
             elif peak_2['class'] == 2:
-                drop_idx.append(peak_1.name)
-                drop_reason.append('other_2')
+                drop_dict[peak_1.name] = 'other_2'
             # One peaks apex is shifted, other one's "more bad": keep shifted one
             elif peak_1['class'] in [1, 3] and peak_2['class'] not in [1, 3]:
-                drop_idx.append(peak_2.name)
-                drop_reason.append('other_1,3')
+                drop_dict[peak_2.name] = 'other_1,3'
             elif peak_2['class'] in [1, 3] and peak_1['class'] not in [1, 3]:
-                drop_idx.append(peak_1.name)
-                drop_reason.append('other_1,3')
+                drop_dict[peak_1.name] = 'other_1,3'
             # Concatenate if two peaks are calssified as too wide and two narrow
             elif peak_1['class'] in [6, 7] and peak_2['class'] in [6, 7]:
                 drop, concat = self._concat_peaks(data.loc[[idx[0], idx[1]]])
-                drop_idx.append(drop)
-                drop_reason.append('concatenated')
-                add_df = add_df.append(concat)
+                drop_dict[drop] = 'concatenated'
+                add_df = add_df.append(concat, sort=False)
             elif peak_1['class'] in [1, 3] and peak_2['class'] in [1, 3]:
                 drop, concat = self._concat_peaks(data.loc[[idx[0], idx[1]]])
-                drop_idx.append(drop)
-                drop_reason.append('concatenated')
-                add_df = add_df.append(concat)
+                drop_dict[drop] = 'concatenated'
+                add_df = add_df.append(concat, sort=False)
             else:
                 print(
                     'No rule defined for overlap of classes: {} vs. {}' \
                         .format(peak_1['class'], peak_2['class'] )
                 )
-        dropped = data.loc[drop_idx]
-        dropped['reason'] = drop_reason
-        dropped = dropped[~dropped['reason'].isin(['concatenated', 'merged'])]
+        dropped_raw = pd.concat(
+            [data.loc[drop_dict.keys()], pd.Series(drop_dict,name='reason')],
+            axis=1
+        )
+        dropped = dropped_raw[
+            ~dropped_raw['reason'].isin(['concatenated', 'merged'])
+        ]
         if not add_df.empty:
             add_df.drop_duplicates(inplace=True)
             for dup_idx in add_df.index[add_df.index.duplicated()]:
                 dup_merge = self._merge_peaks(add_df.loc[dup_idx], dup_idx)
                 add_df.drop(dup_idx, inplace=True)
-                add_df.append(dup_merge)
-
-        return (data.drop(drop_idx), add_df, dropped)
+                add_df.append(dup_merge, sort=False)
+        return (data.drop(drop_dict.keys()), add_df, dropped)
 
 
     def _merge_mz_strings(self, s):
@@ -725,23 +714,24 @@ class DetectedXCMSPeaks(DetectedPeaks):
         # Drop peaks where the apex is placed on the left/right border
         apex_border = (data['rt'] == data['rtmin']) \
             | (data['rt'] == data['rtmax'])
-        dropped = dropped.append(data[apex_border])
+        dropped = dropped.append(data[apex_border], sort=False)
         data = data[~apex_border]
         # Add peak width column
         data['peak_width'] = data['rtmax'] - data['rtmin']
         # Drop peaks with narrower than predefined minimal peak width
         too_narrow = data['peak_width'] < self._min_pw 
-        dropped = dropped.append(data[too_narrow])
+        dropped = dropped.append(data[too_narrow], sort=False)
         data = data[~too_narrow]
         # Add parameter columns
         data['parameters'] = self.get_param_str()
         # Merge nearly duplicated peaks
         data, dupl = self._merge_close_RT_vals(data, self._rt_tol)
-        dropped.append(dupl)
+        dropped.append(dupl, sort=False)
         # Drop peaks with less than predefined number of detected masses
         too_few_mz = data['mz'].str.count(',') < self._min_mz - 1 
-        dropped = dropped.append(data[too_few_mz])
+        dropped = dropped.append(data[too_few_mz], sort=False)
         data = data[~too_few_mz]
+        dropped['reason'] = 'internal'
         return (data, dropped, pd.DataFrame())
 
     
@@ -793,6 +783,7 @@ class DetectedChromaTOFPeaks():
         data['parameters'] = self.get_param_str()
         # Merge nearly duplicated peaks
         data, dropped = self._merge_close_RT_vals(data, self._rt_tol)
+        dropped['reason'] = 'internal'
         # Drop peaks with less than predefined number of detected masses
         data = data[data['mz'].str.count(',') >= self._min_mz - 1]
         return (data, dropped, pd.DataFrame())

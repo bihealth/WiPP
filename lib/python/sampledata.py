@@ -476,33 +476,27 @@ class SampleData():
 
         # Fix perspective angels
         angles = (100, 30)
-        # angles = (90, 0)
 
         # Get max intensity
         max_I = self.get_maxI(rt, rawdata=True)
 
         # Add surface plot: raw_data
-        # plt.subplot(221)
         self._plot_surface(
             fig, x_vals, y_vals, z_vals_raw, rt_scans, angles, max_I, n_plot=1
         )
         # Add surface plot: baseline corrected
-        plt.subplot(222)
         self._plot_surface(
             fig, x_vals, y_vals, z_vals_processed, rt_scans, angles, n_plot=2
         )
         # Add contour plot: baseline corrected
-        plt.subplot(223)
         self._plot_contour(
             fig, x_vals, y_vals, z_vals_processed, rt_scans, n_plot=3
         )
         # Add surface plot: baseline corrected and interpolated
-        plt.subplot(224)
         self._plot_surface(
             fig, np.arange(interpolation_no), y_vals, z_vals_processed_interpol,
             rt_scans_interpolated, angles, n_plot=4
         )
-
         self._save_plot(fig, out_name)
 
 
@@ -590,12 +584,12 @@ class SampleData():
         if n_plot == 1:
             subplot_title = 'Surface: raw data (I_max = {})'.format(max_I)
             z_label = 'Intensity [log10]'
-            x_label = '' #\n\nRT [s]'
+            x_label = '\n\nRT [s]'
             z = z_in
         elif n_plot == 2:
             subplot_title = 'Surface: baseline corrected'
             z_label = 'Intensity [log10]'
-            x_label = '' #\n\nRT [s]'
+            x_label = '\n\nRT [s]'
             z = np.copy(z_in)
             z[z < 1] = np.nan
             z[z == -np.inf] = np.nan
@@ -604,6 +598,7 @@ class SampleData():
             z_label = 'Intensity [normalized]'
             x_label = '\n\nscans [interpolated]'
             z = z_in
+            x_in = x_in.astype(int)
         ax.set_title(subplot_title)
 
         x, y = np.meshgrid(x_in, y)
@@ -642,6 +637,10 @@ class SampleData():
         ax.invert_xaxis()
         ax.xaxis.set_label_coords(1.05, -0.025)
         ax.xaxis.set_label_position('top')
+        if n_plot in [1,2]:
+            ax.set_xticklabels(
+                x_in.round(1), rotation=30, va='baseline', ha='right'
+            )
 
         ax.tick_params(labelsize=14)
 
@@ -704,14 +703,17 @@ class SampleData():
 
         """
         for i in np.argwhere(self.data_raw.sum(axis=1).round() > 0).flatten():
-            self.plot_EIC(i + int(self.mz.min()), rt)
+            mz = i + int(self.mz.min())
+            self.plot_EIC('EIC_{}.pdf'.format(mz), mz, rt)
 
 
-    def plot_EIC(self, masses=[71, 85, 99], rt=[0, np.inf], apex=None,
-                char_mass=None, add_rt=0, out_file):
+    def plot_EIC(self, out_file, masses=[71, 85, 99], rt=[0, np.inf], apex=None,
+                char_mass=None, add_rt=0):
         """ Plot the Extracted Ion Chromatograms (EIC) of certain masses.
 
         Args:
+            out_file (str): Absolute or relative path to the prospective output
+                file.
             masses (list of ints): The masses of which the correlating EICs are
                 plotted. (Default: [71, 85, 99]).
             rt (list of floats): min RT and max RT. (Default: [0, np.inf]).
@@ -720,8 +722,6 @@ class SampleData():
                 (Default: None).
             add_rt (int/float): Additional RT to add to the peaks RT.
                 (Default: 0).
-            out_file (str): Absolute or relative path to the prospective output
-                file.
 
         """
         if isinstance(masses, (int, float, np.int64, np.float64)):
@@ -780,11 +780,13 @@ class SampleData():
         plt.show()
 
 
-    def plot_spectra(self, RT, color='red', norm=False, spec2_str='', out_file):
+    def plot_spectra(self, RT, out_file, color='red', norm=False, spec2_str=''):
         """ Plot the mass spectra at a certain RT.
 
         Args:
             RT (float): The mass spectras RT.
+            out_file (str): Absolute or relative path to the prospective output
+                file.
             color (str): Legit color name for plotting the spectra.
                 (Default: 'red').
             norm (bool): If True, normalize the intensity, otherwise not.
@@ -793,8 +795,6 @@ class SampleData():
                 Format of the second spectra needs to be:
                     '60:15,61:101, 75:1500, ...'
                 (Default: '').
-            out_file (str): Absolute or relative path to the prospective output
-                file.
 
         """
         tick_fontsize = 20

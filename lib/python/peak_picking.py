@@ -280,8 +280,7 @@ def copy_classifier(clf_dir_path, alg):
     shutil.copy(o_rt_file, n_rt_file)
 
 
-def classify_XCMS_peaks(clf_file, res_file, out_file, raw_data_dir, sample_path,
-            f_type):
+def classify_XCMS_peaks(clf_file, res_file, out_file, sample_file):
     """ Classifies peaks detected by XCMS
 
     Args:
@@ -289,24 +288,18 @@ def classify_XCMS_peaks(clf_file, res_file, out_file, raw_data_dir, sample_path,
         res_file (str): Absolute or relative path to a XCMS output file 
             containing detected peaks.
         out_file (str): Absolute or relative path to the prospective output file.
-        raw_data_dir (str): Absolute or relative path to the data directory
-            containing all samples.
-        sample_path (str): group and sample name as a single string.
+        sample_file (str): Absolute or relative path to the corresponding sample
+            file.
         f_type (str): File type of the data samples.
 
     """
     algorithm = os.path.basename(clf_file).split('__')[0]
     peaks = DetectedXCMSPeaks(res_file, algorithm, 0, 1, 0)
-
-    _classify_single_result(
-        peaks, clf_file, res_file, out_file, raw_data_dir, sample_path, f_type
-    )   
+    _classify_single_result(peaks, clf_file, res_file, out_file, sample_file)   
 
 
-def _classify_single_result(peaks, clf_file, res_file, out_file,
-            raw_data_dir, sample_path, f_type, counts_file=None):   
-    sample_file = os.path.join(raw_data_dir, '{}.{}'.format(sample_path, f_type))
-
+def _classify_single_result(peaks, clf_file, res_file, out_file, sample_file,
+            counts_file=None):   
     clf = joblib.load(clf_file)
     rt_file = clf_file.replace('classifier.pkl', 'rt_dim.txt')
     rt_dim = float(open(rt_file, 'r').read())
@@ -394,7 +387,7 @@ def evaluate_grid_search(res_files, out_file, raw_data_dir, f_type, scoring):
             )
             new_row = pd.DataFrame({sample: score}, index=idx)
 
-            sample_res = sample_res.append(new_row)    
+            sample_res = sample_res.append(new_row, sort=False)    
         sample_res.sort_index(inplace=True)
         try:
             results = pd.concat([results, sample_res], axis=1)
@@ -440,7 +433,7 @@ def merge_detected_peaks(peak_files, out_file, raw_data_dir, f_type, tol,
             peaks.join(new_peaks, tol)
         except NameError:
             peaks = new_peaks
-
+    
     file_path_split = utils.split_path(peak_files[0])
     sample_name = '{}.{}'.format(file_path_split[-1].split('__')[0], f_type)
     sample_path = os.path.join(raw_data_dir, file_path_split[-2], sample_name)

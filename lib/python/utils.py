@@ -256,7 +256,7 @@ def _check_peak_picking(cfg):
 
     config_defaults = {
         'classifier': {
-            'SVM': True, 'RF': False,
+            'path': '', 'SVM': True, 'RF': False,
             'validation_set_size': 0.2, 'cross_validation_splits': 3
         },
         'optimization-score': {
@@ -310,7 +310,7 @@ def _update_config(cfg, update_dict):
 
         for arg, arg_default in section_args.items():
             if not arg in cfg[section]:
-                message = '"{}" (section "{}") not defined: set to {}' \
+                message = '"{}" (section "{}") not defined: set to "{}"' \
                     .format(arg, section, arg_default)
                 print('{}{}{}'.format(bcolors.WARNING, message, bcolors.ENDC))
                 cfg[section][arg] = arg_default

@@ -29,7 +29,10 @@ groupCorr_str = '' if not config['XCMS_params']['groupCorr'] else '--groupCorr'
 
 rule all:
     input:
-        '04_Final_results/all_samples__final.csv'
+        expand(
+            '04_Final_results/{group}__final.csv',
+            group=sample_data['groups'] + ['all']
+        )
 
 
 # ------------------------------------------------------------------------------
@@ -53,7 +56,7 @@ rule train_classifier:
     threads:
         config['static_data']['cores']
     run:
-        old_clf_path = config.get('classifier', {}).get('path', False)
+        old_clf_path = config['classifier']['path']
         if old_clf_path:
             pp.copy_classifier(old_clf_path, wildcards['algorithm'])
         else:
@@ -123,12 +126,15 @@ rule classify_grid_search_XCMS_CW:
         '02_Optimization/Classified/XCMS-CW/{XCMS_opt_file}__{parameter_CW}__classified.csv'
     params:
         raw_data = config['static_data']['data_path'],
+        opt_dir = config['optimization-general']['optimization_samples'],
         f_type = sample_data['type']
     run:
-        pp.classify_XCMS_peaks(
-            input.clf, input.file, output[0],
-            params.raw_data, wildcards.XCMS_opt_file, params.f_type
+        sample_file = os.path.join(
+            params.raw_data, params.opt_dir,
+            '{}.{}'.format(wildcards.XCMS_opt_file, params.f_type)
         )
+        pp.classify_XCMS_peaks(input.clf, input.file, output[0], sample_file)
+
 
 
 rule evaluate_grid_search_XCMS_CW:
@@ -206,10 +212,11 @@ rule classify_XCMS_CW:
         raw_data = config['static_data']['data_path'],
         f_type = sample_data['type']
     run:
-        pp.classify_XCMS_peaks(
-            input.clf, input.file, output[0],
-            params.raw_data, wildcards.XCMS_all_file, params.f_type
+        sample_file = os.path.join(
+            params.raw_data,
+            '{}.{}'.format(wildcards.XCMS_all_file, params.f_type)
         )
+        pp.classify_XCMS_peaks(input.clf, input.file, output[0], sample_file)
 
 
 # ------------------------------------------------------------------------------
@@ -271,16 +278,14 @@ rule classify_grid_search_XCMS_MF:
         '02_Optimization/Classified/XCMS-MF/{XCMS_opt_file}__{parameter_MF}__classified.csv'
     params:
         raw_data = config['static_data']['data_path'],
+        opt_dir = config['optimization-general']['optimization_samples'],
         f_type = sample_data['type']
     run:
         sample_file = os.path.join(
-            config['optimization-general']['optimization_samples'],
-            wildcards.XCMS_opt_file
+            params.raw_data, params.opt_dir,
+            '{}.{}'.format(wildcards.XCMS_opt_file, params.f_type)
         )
-        pp.classify_XCMS_peaks(
-            input.clf, input.file, output[0],
-            params.raw_data, sample_file, params.f_type
-        )
+        pp.classify_XCMS_peaks(input.clf, input.file, output[0], sample_file)
 
 
 rule evaluate_grid_search_XCMS_MF:
@@ -354,10 +359,11 @@ rule classify_XCMS_MF:
         raw_data = config['static_data']['data_path'],
         f_type = sample_data['type']
     run:
-        pp.classify_XCMS_peaks(
-            input.clf, input.file, output[0],
-            params.raw_data, wildcards.XCMS_all_file, params.f_type
+        sample_file = os.path.join(
+            params.raw_data,
+            '{}.{}'.format(wildcards.XCMS_all_file, params.f_type)
         )
+        pp.classify_XCMS_peaks(input.clf, input.file, output[0], sample_file)
 
 
 # ------------------------------------------------------------------------------
@@ -408,47 +414,38 @@ else:
     align_files = '04_Final_results/01_Merged/{XCMS_all_file}__merged.csv'
 
 
-rule align_across_groups:
+rule merging_overview:
     input:
         expand(
             align_files,
             XCMS_all_file=sample_data['files']
         )
     output:
+        '04_Final_results/01_Merged/overview.csv'
+    run:
+        with open(output[0], 'w') as f:
+            f.write('\n'.join(sorted(input)))
+
+
+rule align_across_groups:
+    input:
+        '04_Final_results/01_Merged/overview.csv'
+    output:
         '04_Final_results/{group}__final.csv'
     params:
         tolerance = align_tol,
         min_samples = config['alignment']['min_samples'],
-        min_sim = config['alignment']['min_similarity']
+        min_sim = config['alignment']['min_similarity'],
+        RI = config['retention_index']['calculate']
     run:
-        in_files = [i for i in input if wildcards.group in utils.split_path(i)]
-        pa.align_across_samples(
-            in_files, output[0],
-            params.tolerance, params.min_samples, params.min_sim,
-            config['retention_index']['calculate']
-        )
-
-
-rule align_across_all:
-    input:
-        expand(
-            '04_Final_results/{group}__final.csv',
-            group=sample_data['groups']
-        )
-    output:
-        '04_Final_results/all_samples__final.csv'
-    wildcard_constraints:
-        group = '(?<=01_Merged/).*(?=__final)'
-    params:
-        tolerance = align_tol,
-        min_samples = config['alignment']['min_samples'],
-        min_sim = config['alignment']['min_similarity']
-    run:
-        in_files = [
-            align_files.format(XCMS_all_file=i) for i in sample_data['files']
+        with open(input[0], 'r') as f:
+            merged_files = f.read().split('\n')
+        grp_files = [
+            i for i in merged_files \
+                if wildcards.group in utils.split_path(i) \
+                    or wildcards.group == 'all'
         ]
         pa.align_across_samples(
-            in_files, output[0],
-            params.tolerance, params.min_samples, params.min_sim,
-            config['retention_index']['calculate']
+            grp_files, output[0],
+            params.tolerance, params.min_samples, params.min_sim, params.RI
         )

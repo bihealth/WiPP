@@ -1,10 +1,10 @@
 static_data:
-  data_path: /home/hw/Desktop/PeakDetection_dev/data/MTBLS105/GC_SIM_MS
+  data_path: data
   high_resolution: False
   cores: 4
   peak_min_width: 0.5
   peak_min_mz: 3
-  merging_RT_tol: 0.2 # add change!
+  merging_RT_tol: 0.2
 
 
 algorithms:
@@ -22,8 +22,8 @@ merging:
 
 
 training_data-general:
-  training_samples: Training_samples
-  plots_per_sample: 250
+  training_samples: training_samples
+  plots_per_sample: 25
 
 
 training_data-params:
@@ -41,12 +41,13 @@ training_data-params:
 classifier:
   SVM: True
   RF: False
+  # path: trained_classifier
   validation_set_size: 0.2
   cross_validation_splits: 3
 
 
 optimization-general:
-  optimization_samples: Optimization_samples
+  optimization_samples: optimization_samples
 
 
 optimization-score:
@@ -74,8 +75,7 @@ grid_search-params:
 retention_index:
   calculate: False
   wash: 
-  # alkanes: ['c10', 'c12', 'c15', 'c17', 'c19', 'c22', 'c28', 'c32', 'c36']
-  alkanes: ['c8', 'c9', 'c10', 'c12', 'c14', 'c16', 'c18', 'c20', 'c22', 'c24', 'c26', 'c28', 'c30']
+  alkanes: []
 
 
 alignment:

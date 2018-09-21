@@ -88,16 +88,18 @@ def run_classification(vis_file_path, out_dir, pdf_cmd):
     out_file_tmp = '{}.tmp'.format(out_file)
     out_stats = os.path.join(out_dir, '{}__{}__statistics.csv'.format(alg, sample))
 
+    # Load temp file
     if os.path.isfile(out_file_tmp):
         data = pd.read_csv(out_file_tmp, sep='\t')
+    # Load already annotated file 
     elif os.path.isfile(out_file):
         data = pd.read_csv(out_file, sep='\t')
+    # Generate new file
     else:
         data = pd.read_csv(vis_file_path, sep='\t')
         data['class'] = None
 
-    data.sort_values(by='rt', inplace=True)
-    data.reset_index(inplace=True, drop=True)
+    data = data.sort_values(by='rt').reset_index(drop=True)
 
     def get_peak_str(x):
         return os.path.basename(x).replace('.pdf', ')').replace('__', ' (')
@@ -157,7 +159,7 @@ def run_classification(vis_file_path, out_dir, pdf_cmd):
 
     try:
         data.drop(['index', 'level_0'], axis=1, inplace=True)
-    except KeyError:
+    except ValueError:
         pass
 
     # Finale save
