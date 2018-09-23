@@ -1,8 +1,7 @@
 #!/usr/bin/env Rscript
 
 library(argparser)
-library(ConfigParser)
-suppressMessages(library(CAMERA))
+suppressWarnings(suppressMessages(library(CAMERA)))
 
 #-------------------------------------------------------------------------------
 # ARGUMENT PARSER
@@ -31,13 +30,13 @@ p <- add_argument(p, '--groupCorr',
 )
 p <- add_argument(p, '--cores', default = 1, help = 'number of cores (int)')
 p <- add_argument(p, '--utils',
-  default = '/home/nborgsmu/Desktop/Masterarbeit/PeakDetection_dev/lib/R/utils.R',
+  default = '../../lib/R/utils.R',
   help = 'path to ultis.R'
 )
 
 argv <- parse_args(p)
 source(argv$utils)
-
+source('../../lib/R/ConfigParser.R')
 
 #-------------------------------------------------------------------------------
 # CONFIG PARSER
@@ -114,9 +113,6 @@ if (argv$groupCorr) {
     intval = config$get('intval', 'into', 'groupCorr')
   )
 }
-
-# TODO <NB, 18.01.16> What about 'groupDen' (XCMS) grouping algorithm?!
-
 
 #-------------------------------------------------------------------------------
 # Output

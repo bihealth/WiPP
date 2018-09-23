@@ -1,8 +1,7 @@
 #!/usr/bin/env Rscript
 
 library(argparser)
-library(ConfigParser)
-suppressMessages(library(CAMERA))
+suppressWarnings(suppressMessages(library(CAMERA)))
 
 #-------------------------------------------------------------------------------
 # ARGUMENT PARSER
@@ -41,9 +40,9 @@ p <- add_argument(p, '--utils',
   help = 'path to ultis.R'
 )
 
-
 argv <- parse_args(p)
 source(argv$utils)
+source('../../lib/R/ConfigParser.R')
 
 #-------------------------------------------------------------------------------
 # CONFIG PARSER
@@ -85,9 +84,6 @@ MF.features <- xcmsSet(
   max = config$getfloat('max', 500, 'matchedFilter')
 )
 
-# saveRDS(MF.features, file=gsub('.csv', '.rds', out_path))
-# readRDS() for loading Object
-
 MF.features.an <- xsAnnotate(
   MF.features,
   sample = c(1:length(MF.features)), # automatic selection. For all samples: NA
@@ -120,9 +116,6 @@ if (argv$groupCorr) {
     intval = config$get('intval', 'into', 'groupCorr')
   )
 }
-
-# TODO <NB, 18.01.16> What about 'groupDen' (XCMS) grouping algorithm?!
-
 
 #-------------------------------------------------------------------------------
 # Output
