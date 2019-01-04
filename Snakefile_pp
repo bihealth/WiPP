@@ -1,13 +1,15 @@
-""" Snakefile for the second Pipeline part: the training of a classifier, 
+#!/usr/bin/env python3
+
+""" Snakefile for the second Pipeline part: Training of a classifier, 
 parameter optimization, actuall peak picking, merging to a high confidence peak
-set and cross-sample alignment.
+set, and cross-sample alignment.
 
 """
 
 import sys
 import os
 # Add path to R and python libraries
-base_dir = os.path.split(os.path.split(os.getcwd())[0])[0]
+base_dir = '..'
 py_lib_dir = os.path.join(base_dir, 'lib', 'python')
 R_lib_dir = os.path.join(base_dir, 'lib', 'R')
 R_utils_file = os.path.join(R_lib_dir, 'utils.R')
@@ -90,40 +92,34 @@ rule run_grid_search_XCMS_CW:
         groupCorr = groupCorr_str,
         R_dir = R_lib_dir,
         utils = R_utils_file,
-    run:
-        # Low res params
-        params.pwMin = re.search('par0-(\d+\.\d+|\d+)', wildcards.parameter_CW)\
-            .group(1)
-        params.pwMax = re.search('par1-(\d+\.\d+|\d+)', wildcards.parameter_CW) \
-            .group(1)
-        # High res params
-        if config['static_data'].get('high_resolution', False):
-            params.mzdiff = '--mzdiff {}'.format(
-                re.search('par2-{1}(-?\d+\.\d+|\d+)', wildcards.parameter_CW)\
+        pwMin = lambda wildcards: \
+            re.search('par0-(\d+\.\d+|\d+)', wildcards.parameter_CW).group(1),
+        pwMax = lambda wildcards: \
+            re.search('par1-(\d+\.\d+|\d+)', wildcards.parameter_CW).group(1),
+        mzdiff = lambda wildcards: '--mzdiff {}'.format(
+                    re.search('par2-{1}(-?\d+\.\d+|\d+)', wildcards.parameter_CW)\
                     .group(1).replace('-', 'm')
-            )
-            params.ppm = '--ppm {}'.format(
+                ) if config['static_data'].get('high_resolution', False) else '',
+        ppm = lambda wildcards: '--ppm {}'.format(
                 re.search('par3-(\d+\.\d+|\d+)', wildcards.parameter_CW) \
                     .group(1)
-            )
-        else:
-            params.mzdiff = ''
-            params.ppm = ''
-
-        shell(
-            'Rscript {params.R_dir}/run_XCMS-CW.R {input} {output} '
-            '--peakwidth {params.pwMin} {params.pwMax} '
-            '{params.mzdiff} {params.ppm} '
-            '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
-        )
+            ) if config['static_data'].get('high_resolution', False) else ''
+    shell:
+        'Rscript {params.R_dir}/run_XCMS-CW.R {input} {output} '
+        '--peakwidth {params.pwMin} {params.pwMax} '
+        '{params.mzdiff} {params.ppm} '
+        '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
+        
 
 
 rule classify_grid_search_XCMS_CW:
     input:
         clf = '01_Classifier/XCMS-CW__classifier.pkl',
-        file = '02_Optimization/Grid_search/XCMS-CW/{XCMS_opt_file}__{parameter_CW}.csv',
+        file = '02_Optimization/Grid_search/XCMS-CW/' \
+            '{XCMS_opt_file}__{parameter_CW}.csv',
     output:
-        '02_Optimization/Classified/XCMS-CW/{XCMS_opt_file}__{parameter_CW}__classified.csv'
+        '02_Optimization/Classified/XCMS-CW/' \
+            '{XCMS_opt_file}__{parameter_CW}__classified.csv'
     params:
         raw_data = config['static_data']['data_path'],
         opt_dir = config['optimization-general']['optimization_samples'],
@@ -140,7 +136,8 @@ rule classify_grid_search_XCMS_CW:
 rule evaluate_grid_search_XCMS_CW:
     input:
         expand(
-            '02_Optimization/Classified/XCMS-CW/{XCMS_opt_file}__{parameter_CW}__classified.csv',
+            '02_Optimization/Classified/XCMS-CW/' \
+                '{XCMS_opt_file}__{parameter_CW}__classified.csv',
             XCMS_opt_file=opt_data['files'],
             parameter_CW=opt_data['params']['XCMS-CW'],
         )
@@ -164,43 +161,25 @@ rule run_XCMS_CW_all:
         '02_Optimization/00__XCMS-CW__best_parameters.csv',
     output:
         '03_Peak_Picking/XCMS-CW/{XCMS_all_file}__peaks.csv',
+    conda:
+        os.path.join('..', 'envs', 'R_env.yaml')
     params:
         cores = 2,
         groupCorr = groupCorr_str,
         R_dir = R_lib_dir,
-        utils = R_utils_file
-    run:
-        with open(input[0], 'r') as f:
-            params_raw = f.read().strip()
-
-        params_dict = {
-            i.split('\t')[0]: i.split('\t')[1] for i in params_raw.split('\n')
-        }
-
-        params.pwMin = params_dict['par0']
-        params.pwMax = params_dict['par1']
-
-        # High res params
-        if config['static_data']['high_resolution']:
-            params.mzdiff = '--mzdiff {}'.format(
-                params_dict['par2'].replace('-', 'm')
-            )
-            params.ppm = '--ppm {}'.format(params_dict['par3'])
-        else:
-            params.mzdiff = ''
-            params.ppm = ''
-
-        params.raw_data_file = os.path.join(
+        utils = R_utils_file,
+        raw_data_file = lambda wildcards: os.path.join(
             config['static_data']['data_path'],
             '{}.{}'.format(wildcards.XCMS_all_file, sample_data['type'])
+        ),
+        **utils.read_params_CW(
+            '02_Optimization/00__XCMS-CW__best_parameters.csv'
         )
-        shell(
-            'Rscript {params.R_dir}/run_XCMS-CW.R {params.raw_data_file} {output} '
-            '--peakwidth {params.pwMin} {params.pwMax} '
-            '{params.mzdiff} {params.ppm} '
-            '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
-        )
-
+    shell:
+        'Rscript {params.R_dir}/run_XCMS-CW.R {params.raw_data_file} {output} '
+        '--peakwidth {params.pwMin} {params.pwMax} {params.mzdiff} {params.ppm} '
+        '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
+        
 
 rule classify_XCMS_CW:
     input:
@@ -237,45 +216,38 @@ rule run_grid_search_XCMS_MF:
         groupCorr = groupCorr_str,
         R_dir = R_lib_dir,
         utils = R_utils_file,
-    run:
-        # Low res params
-        params.fwhm = re.search('par0-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
-            .group(1)
-        params.sn = re.search('par1-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
-            .group(1)
-        # Hgh res params
-        if config['static_data']['high_resolution']:
-            params.mzdiff = '--mzdiff {}'.format(
+        fwhm = lambda wildcards: \
+            re.search('par0-(\d+\.\d+|\d+)', wildcards.parameter_MF).group(1),
+        sn = lambda wildcards: \
+            re.search('par1-(\d+\.\d+|\d+)', wildcards.parameter_MF).group(1),
+        mzdiff = lambda wildcards: '--mzdiff {}'.format(
                 re.search('par2-{1}(-?\d+\.\d+|\d+)', wildcards.parameter_MF) \
                     .group(1).replace('-', 'm')
-            )
-            params.step = '--step {}'.format(
+            ) if config['static_data'].get('high_resolution', False) else '',
+        step = lambda wildcards: '--step {}'.format(
                 re.search('par3-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
                     .group(1)
-            )
-            params.steps = '--steps {}'.format(
+            )  if config['static_data'].get('high_resolution', False) else '',
+        steps = lambda wildcards: '--steps {}'.format(
                 re.search('par4-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
                     .group(1)
-            )
-        else:
-            params.mzdiff = ''
-            params.step = ''
-            params.steps = ''
-
-        shell(
-            'Rscript {params.R_dir}/run_XCMS-MF.R {input} {output} '
-            '--fwhm {params.fwhm} --sn {params.sn} '
-            '{params.mzdiff} {params.step} {params.steps} '
-            '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
-        )
+            ) if config['static_data'].get('high_resolution', False) else ''
+    shell:
+        'Rscript {params.R_dir}/run_XCMS-MF.R {input} {output} '
+        '--fwhm {params.fwhm} --sn {params.sn} '
+        '{params.mzdiff} {params.step} {params.steps} '
+        '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
+        
 
 
 rule classify_grid_search_XCMS_MF:
     input:
         clf = '01_Classifier/XCMS-MF__classifier.pkl',
-        file = '02_Optimization/Grid_search/XCMS-MF/{XCMS_opt_file}__{parameter_MF}.csv',
+        file = '02_Optimization/Grid_search/XCMS-MF/' \
+            '{XCMS_opt_file}__{parameter_MF}.csv',
     output:
-        '02_Optimization/Classified/XCMS-MF/{XCMS_opt_file}__{parameter_MF}__classified.csv'
+        '02_Optimization/Classified/XCMS-MF/' \
+            '{XCMS_opt_file}__{parameter_MF}__classified.csv'
     params:
         raw_data = config['static_data']['data_path'],
         opt_dir = config['optimization-general']['optimization_samples'],
@@ -291,7 +263,8 @@ rule classify_grid_search_XCMS_MF:
 rule evaluate_grid_search_XCMS_MF:
     input:
         expand(
-            '02_Optimization/Classified/XCMS-MF/{XCMS_opt_file}__{parameter_MF}__classified.csv',
+            '02_Optimization/Classified/XCMS-MF/' \
+                '{XCMS_opt_file}__{parameter_MF}__classified.csv',
             XCMS_opt_file=opt_data['files'],
             parameter_MF=opt_data['params']['XCMS-MF'],
         )
@@ -315,39 +288,26 @@ rule run_XCMS_MF_all:
         '02_Optimization/00__XCMS-MF__best_parameters.csv'
     output:
         '03_Peak_Picking/XCMS-MF/{XCMS_all_file}__peaks.csv',
+    conda:
+        os.path.join('..', 'envs', 'R_env.yaml')
     params:
         cores = 2,
         groupCorr = groupCorr_str,
         R_dir = R_lib_dir,
-        utils = R_utils_file
-    run:
-        with open(input[0], 'r') as f:
-            params_raw = f.read().split('\n')
-        params.fwhm = params_raw[0].split('\t')[1]
-        params.sn = params_raw[1].split('\t')[1]
-        if config['static_data']['high_resolution']:
-            params.mzdiff = '--mzdiff {}' \
-                .format(params_raw[2].split('\t')[1].replace('-', 'm'))
-            params.step = '--step {}'.format(params_raw[3].split('\t')[1])
-            params.steps = '--steps {}'.format(params_raw[4].split('\t')[1])
-        else:
-            params.mzdiff = ''
-            params.step = ''
-            params.steps = ''
-
-        params.raw_data_file = os.path.join(
+        utils = R_utils_file,
+        raw_data_file = lambda wildcards: os.path.join(
             config['static_data']['data_path'],
             '{}.{}'.format(wildcards.XCMS_all_file, sample_data['type'])
+        ),
+        **utils.read_params_MF(
+            '02_Optimization/00__XCMS-MF__best_parameters.csv'
         )
-
-        shell(
-            'Rscript {params.R_dir}/run_XCMS-MF.R '
-            '{params.raw_data_file} {output} '
-            '--fwhm {params.fwhm} --sn {params.sn} '
-            '{params.mzdiff} {params.step} {params.steps} '
-            '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
-        )
-
+    shell:
+        'Rscript {params.R_dir}/run_XCMS-MF.R {params.raw_data_file} {output} '
+        '--fwhm {params.fwhm} --sn {params.sn} {params.mzdiff} {params.step} '
+        '{params.steps} --cores {params.cores} {params.groupCorr} '
+        '--utils {params.utils}'
+        
 
 rule classify_XCMS_MF:
     input:
@@ -373,7 +333,8 @@ rule classify_XCMS_MF:
 rule merge_all:
     input:
         expand(
-            '04_Final_results/00_Classified/{algorithm}/{{XCMS_all_file}}__classified.csv',
+            '04_Final_results/00_Classified/{algorithm}/' \
+                '{{XCMS_all_file}}__classified.csv',
             algorithm=algorithms
         )
     output:
@@ -393,8 +354,8 @@ rule merge_all:
 
 if config['retention_index']['calculate']:
     align_tol = config['alignment']['RI_tol']
-    align_files = '04_Final_results/02_RetentionIndex/{XCMS_all_file}__merged_RI.csv'
-
+    align_files = '04_Final_results/02_RetentionIndex/' \
+        '{XCMS_all_file}__merged_RI.csv'
     rule calc_retention_index:
         input:
             sample = '04_Final_results/01_Merged/{XCMS_all_file}__merged.csv',

@@ -1,16 +1,20 @@
-""" Snakefile for the first Pipeline part: the generation of Training Data
+#!/usr/bin/env python3
+
+""" Snakefile for the first Pipeline part: Generation of Training Data
 for manual classification
 
 """
 
 import sys
 import os
+import re
 # Add path to R and python libraries
-base_dir = os.path.split(os.path.split(os.getcwd())[0])[0]
+base_dir = '..'
 R_lib_dir = os.path.join(base_dir, 'lib', 'R')
 R_utils_file = os.path.join(R_lib_dir, 'utils.R')
 py_lib_dir = os.path.join(base_dir, 'lib', 'python')
 sys.path.append(py_lib_dir)
+import pdb; pdb.set_trace()
 # Import Pipeline modules
 import utils
 import peak_visualization as pvis
@@ -27,7 +31,8 @@ groupCorr_str = '' if not config['XCMS_params']['groupCorr'] else '--groupCorr'
 rule all:
     input:
         expand(
-            '00_Training/02_Visualization/{algorithm}__{tr_file}__visualization_overview.csv',
+            '00_Training/02_Visualization/' \
+                '{algorithm}__{tr_file}__visualization_overview.csv',
             algorithm=algorithms,
             tr_file=tr_data['files']
         )
@@ -49,37 +54,30 @@ rule run_CW:
         )
     output:
         '00_Training/00_Peak_Picking/XCMS-CW/{tr_file}__{parameter_CW}.csv'
+    conda:
+        os.path.join('..', 'envs', 'R_env.yaml')
     params:
         cores = 2,
         groupCorr = groupCorr_str,
         R_dir = R_lib_dir,
-        utils = R_utils_file
-    run:
-        # Low res params
-        params.pwMin = re.search('par0-(\d+\.\d+|\d+)', wildcards.parameter_CW)\
-            .group(1)
-        params.pwMax = re.search('par1-(\d+\.\d+|\d+)', wildcards.parameter_CW) \
-            .group(1)
-        # HIgh res params
-        if config['static_data'].get('high_resolution', False):
-            params.mzdiff = '--mzdiff {}'.format(
-                re.search('par2-{1}(-?\d+\.\d+|\d+)', wildcards.parameter_CW)\
+        utils = R_utils_file,
+        pwMin = lambda wildcards: \
+            re.search('par0-(\d+\.\d+|\d+)', wildcards.parameter_CW).group(1),
+        pwMax = lambda wildcards: \
+            re.search('par1-(\d+\.\d+|\d+)', wildcards.parameter_CW).group(1),
+        mzdiff = lambda wildcards: '--mzdiff {}'.format(
+                    re.search('par2-{1}(-?\d+\.\d+|\d+)', wildcards.parameter_CW)\
                     .group(1).replace('-', 'm')
-            )
-            params.ppm = '--ppm {}'.format(
+                ) if config['static_data'].get('high_resolution', False) else '',
+        ppm = lambda wildcards: '--ppm {}'.format(
                 re.search('par3-(\d+\.\d+|\d+)', wildcards.parameter_CW) \
                     .group(1)
-            )
-        else:
-            params.mzdiff = ''
-            params.ppm = ''
-
-        shell(
-            'Rscript {params.R_dir}/run_XCMS-CW.R {input} {output} '
-            '--peakwidth {params.pwMin} {params.pwMax} '
-            '{params.mzdiff} {params.ppm} '
-            '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
-        )
+            ) if config['static_data'].get('high_resolution', False) else ''
+    shell:
+        'Rscript {params.R_dir}/run_XCMS-CW.R {input} {output} '
+        '--peakwidth {params.pwMin} {params.pwMax} {params.mzdiff} {params.ppm} '
+        '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
+        
 
 
 rule merge_XCMS_CW_training:
@@ -116,42 +114,35 @@ rule run_MF:
         )
     output:
         '00_Training/00_Peak_Picking/XCMS-MF/{tr_file}__{parameter_MF}.csv'
+    conda:
+        os.path.join('..', 'envs', 'R_env.yaml')
     params:
         cores = 2,
         groupCorr = groupCorr_str,
         R_dir = R_lib_dir,
-        utils = R_utils_file
-    run:
-        # Low res params
-        params.fwhm = re.search('par0-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
-            .group(1)
-        params.sn = re.search('par1-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
-            .group(1)
-        # Hgh res params
-        if config['static_data'].get('high_resolution', False):
-            params.mzdiff = '--mzdiff {}'.format(
+        utils = R_utils_file,
+        fwhm = lambda wildcards: \
+            re.search('par0-(\d+\.\d+|\d+)', wildcards.parameter_MF).group(1),
+        sn = lambda wildcards: \
+            re.search('par1-(\d+\.\d+|\d+)', wildcards.parameter_MF).group(1),
+        mzdiff = lambda wildcards: '--mzdiff {}'.format(
                 re.search('par2-{1}(-?\d+\.\d+|\d+)', wildcards.parameter_MF) \
                     .group(1).replace('-', 'm')
-            )
-            params.step = '--step {}'.format(
+            ) if config['static_data'].get('high_resolution', False) else '',
+        step = lambda wildcards: '--step {}'.format(
                 re.search('par3-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
                     .group(1)
-            )
-            params.steps = '--steps {}'.format(
+            ) if config['static_data'].get('high_resolution', False) else '',
+        steps = lambda wildcards: '--steps {}'.format(
                 re.search('par4-(\d+\.\d+|\d+)', wildcards.parameter_MF) \
                     .group(1)
-            )
-        else:
-            params.mzdiff = ''
-            params.step = ''
-            params.steps = ''
-
-        shell(
-            'Rscript {params.R_dir}/run_XCMS-MF.R {input} {output} '
-            '--fwhm {params.fwhm} --sn {params.sn} '
-            '{params.mzdiff} {params.step} {params.steps} '
-            '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
-        )
+            ) if config['static_data'].get('high_resolution', False) else ''
+    shell:
+        'Rscript {params.R_dir}/run_XCMS-MF.R {input} {output} '
+        '--fwhm {params.fwhm} --sn {params.sn} {params.mzdiff} {params.step} '
+        '{params.steps} --cores {params.cores} {params.groupCorr} '
+        '--utils {params.utils}'
+        
 
         
 rule merge_XCMS_MF_training:
@@ -183,7 +174,8 @@ rule visualize_training_data:
     input:
         '00_Training/01_Merging/{algorithm}/{tr_file}__merged.csv'
     output:
-        '00_Training/02_Visualization/{algorithm}__{tr_file}__visualization_overview.csv'
+        '00_Training/02_Visualization/' \
+            '{algorithm}__{tr_file}__visualization_overview.csv'
     params:
         raw_data = config['static_data']['data_path'],
         train_dir = config['training_data-general']['training_samples'],

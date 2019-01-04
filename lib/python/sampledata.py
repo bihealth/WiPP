@@ -708,7 +708,7 @@ class SampleData():
 
 
     def plot_EIC(self, out_file, masses=[71, 85, 99], rt=[0, np.inf], apex=None,
-                char_mass=None, add_rt=0):
+                char_mass=None, add_rt=0, lib_rt=None):
         """ Plot the Extracted Ion Chromatograms (EIC) of certain masses.
 
         Args:
@@ -746,10 +746,12 @@ class SampleData():
                 color=colors[idx], label=label_str
             )
             if add_rt:
-                plt.axvline(rt[0], color='#e41a1c', ls='-')
+                plt.axvline(rt[0], color='#e41a1c', ls='-', label='WiPP')
                 plt.axvline(rt[1], color='#e41a1c', ls='-')
         if apex:
             plt.axvline(apex, color='#e41a1c', ls='--')
+        if lib_rt:
+            plt.axvline(lib_rt, color='#ff7400', ls='--', label='Ranjbar2015')
 
         plt.xlabel('Rt [s]', fontsize=axisLabels_fontsize)
         plt.ylabel('Intensity', fontsize=axisLabels_fontsize)
@@ -759,6 +761,7 @@ class SampleData():
 
         fig.set_figwidth(fig.get_figwidth() * 6)
         fig.set_figheight(fig.get_figheight() * 4)
+        plt.show()
         plt.savefig(out_file, dpi=36, orient='landscape')
 
 

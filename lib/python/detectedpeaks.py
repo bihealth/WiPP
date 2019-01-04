@@ -423,14 +423,14 @@ class DetectedPeaks():
         rtmin_diff = self._get_diff_se_tol(data['rtmin'], tol)
         rtmax_diff = self._get_diff_se_tol(data['rtmax'], tol)
         to_merge = apex_diff & rtmin_diff & rtmax_diff
-        data2 = data
+
         # Merge identified peaks
         drop = []
         for idx in to_merge:
             merged_peak = self._merge_peaks(
                 data.loc[[idx[0], idx[1]]], data.index.max() + 1
             )
-            data = data.append(merged_peak, ignore_index=True, sort=False)
+            data = data.append(merged_peak, ignore_index=False, sort=False)
             drop.extend(list(idx))
         return (data.drop(drop), data.loc[drop])
 
