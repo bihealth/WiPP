@@ -9,7 +9,7 @@ set, and cross-sample alignment.
 import sys
 import os
 # Add path to R and python libraries
-base_dir = '..'
+base_dir = os.environ['WIPP_PATH']
 py_lib_dir = os.path.join(base_dir, 'lib', 'python')
 R_lib_dir = os.path.join(base_dir, 'lib', 'R')
 R_utils_file = os.path.join(R_lib_dir, 'utils.R')
@@ -25,14 +25,16 @@ configfile: 'config.yaml'
 # proof check config data and get relevant data
 algorithms, sample_data, opt_data, wash_file = \
     utils.evaluate_peakpicking_config(config)
-
 groupCorr_str = '' if not config['XCMS_params']['groupCorr'] else '--groupCorr'
+out_dir = config['static_data'].get('output_dir', '')
+if out_dir == '.':
+    out_dir = ''
 
 
 rule all:
     input:
         expand(
-            '04_Final_results/{group}__final.csv',
+            os.path.join(out_dir, '04_Final_results', '{group}__final.csv'),
             group=sample_data['groups'] + ['all']
         )
 
@@ -44,7 +46,7 @@ rule all:
 
 rule train_classifier:
     output:
-        '01_Classifier/{algorithm}__classifier.pkl'
+        os.path.join(out_dir, '01_Classifier', '{algorithm}__classifier.pkl')
     params:
         tr_dir = os.path.join(
             config['static_data']['data_path'],
@@ -56,7 +58,7 @@ rule train_classifier:
         SVM = config['classifier']['SVM'],
         RF = config['classifier']['RF']
     threads:
-        config['static_data']['cores']
+        99
     run:
         old_clf_path = config['classifier']['path']
         if old_clf_path:
@@ -86,7 +88,12 @@ rule run_grid_search_XCMS_CW:
             '{}.{}'.format('{XCMS_opt_file}', sample_data['type'])
         )
     output:
-        '02_Optimization/Grid_search/XCMS-CW/{XCMS_opt_file}__{parameter_CW}.csv'
+        os.path.join(
+            out_dir, '02_Optimization', 'Grid_search', 'XCMS-CW',
+            '{XCMS_opt_file}__{parameter_CW}.csv'
+        )
+    conda:
+        os.path.join('..', 'envs', 'R_env.yaml')
     params:
         cores = 2,
         groupCorr = groupCorr_str,
@@ -114,12 +121,16 @@ rule run_grid_search_XCMS_CW:
 
 rule classify_grid_search_XCMS_CW:
     input:
-        clf = '01_Classifier/XCMS-CW__classifier.pkl',
-        file = '02_Optimization/Grid_search/XCMS-CW/' \
-            '{XCMS_opt_file}__{parameter_CW}.csv',
+        clf = os.path.join(out_dir, '01_Classifier', 'XCMS-CW__classifier.pkl'),
+        file = os.path.join(
+            out_dir, '02_Optimization', 'Grid_search', 'XCMS-CW', 
+            '{XCMS_opt_file}__{parameter_CW}.csv'
+        )
     output:
-        '02_Optimization/Classified/XCMS-CW/' \
+        os.path.join(
+            out_dir, '02_Optimization', 'Classified', 'XCMS-CW',
             '{XCMS_opt_file}__{parameter_CW}__classified.csv'
+        )
     params:
         raw_data = config['static_data']['data_path'],
         opt_dir = config['optimization-general']['optimization_samples'],
@@ -136,13 +147,17 @@ rule classify_grid_search_XCMS_CW:
 rule evaluate_grid_search_XCMS_CW:
     input:
         expand(
-            '02_Optimization/Classified/XCMS-CW/' \
-                '{XCMS_opt_file}__{parameter_CW}__classified.csv',
+            os.path.join(
+                out_dir, '02_Optimization', 'Classified', 'XCMS-CW',
+                '{XCMS_opt_file}__{parameter_CW}__classified.csv'
+            ),
             XCMS_opt_file=opt_data['files'],
             parameter_CW=opt_data['params']['XCMS-CW'],
         )
     output:
-        '02_Optimization/00__XCMS-CW__best_parameters.csv'
+        os.path.join(
+            out_dir, '02_Optimization', '00__XCMS-CW__best_parameters.csv'
+        )
     wildcard_constraints:
         XCMS_opt_file = '.*(?!__)',
         parameter_CW = '.*(?=__)'
@@ -155,12 +170,27 @@ rule evaluate_grid_search_XCMS_CW:
             params.raw_data, params.f_type, config['optimization-score']
         )
 
+rule wait:
+    input: 
+        os.path.join(
+            out_dir, '02_Optimization', '00__XCMS-CW__best_parameters.csv'
+        )
+    output:
+        os.path.join(out_dir, '02_Optimization', 'rdy.txt')
+    shell:
+        'touch {output} && sleep 3'
+
 
 rule run_XCMS_CW_all:
     input:
-        '02_Optimization/00__XCMS-CW__best_parameters.csv',
+        # os.path.join(
+        #     out_dir, '02_Optimization', '00__XCMS-CW__best_parameters.csv'
+        # ),
+        os.path.join(out_dir, '02_Optimization', 'rdy.txt')
     output:
-        '03_Peak_Picking/XCMS-CW/{XCMS_all_file}__peaks.csv',
+        os.path.join(
+            out_dir, '03_Peak_Picking', 'XCMS-CW', '{XCMS_all_file}__peaks.csv'
+        )
     conda:
         os.path.join('..', 'envs', 'R_env.yaml')
     params:
@@ -173,7 +203,9 @@ rule run_XCMS_CW_all:
             '{}.{}'.format(wildcards.XCMS_all_file, sample_data['type'])
         ),
         **utils.read_params_CW(
-            '02_Optimization/00__XCMS-CW__best_parameters.csv'
+            os.path.join(
+                out_dir, '02_Optimization', '00__XCMS-CW__best_parameters.csv'
+            )
         )
     shell:
         'Rscript {params.R_dir}/run_XCMS-CW.R {params.raw_data_file} {output} '
@@ -183,10 +215,15 @@ rule run_XCMS_CW_all:
 
 rule classify_XCMS_CW:
     input:
-        file = '03_Peak_Picking/XCMS-CW/{XCMS_all_file}__peaks.csv',
-        clf = '01_Classifier/XCMS-CW__classifier.pkl'
+        file = os.path.join(
+            out_dir, '03_Peak_Picking', 'XCMS-CW', '{XCMS_all_file}__peaks.csv'
+        ),
+        clf = os.path.join(out_dir, '01_Classifier', 'XCMS-CW__classifier.pkl')
     output:
-        '04_Final_results/00_Classified/XCMS-CW/{XCMS_all_file}__classified.csv'
+        os.path.join(
+            out_dir, '04_Final_results', '00_Classified', 'XCMS-CW',
+            '{XCMS_all_file}__classified.csv'
+        )
     params:
         raw_data = config['static_data']['data_path'],
         f_type = sample_data['type']
@@ -210,7 +247,12 @@ rule run_grid_search_XCMS_MF:
             '{}.{}'.format('{XCMS_opt_file}', sample_data['type'])
         )
     output:
-        '02_Optimization/Grid_search/XCMS-MF/{XCMS_opt_file}__{parameter_MF}.csv'
+        os.path.join(
+            out_dir, '02_Optimization', 'Grid_search', 'XCMS-MF', 
+            '{XCMS_opt_file}__{parameter_MF}.csv'
+        )
+    conda:
+        os.path.join('..', 'envs', 'R_env.yaml')
     params:
         cores = 2,
         groupCorr = groupCorr_str,
@@ -242,12 +284,16 @@ rule run_grid_search_XCMS_MF:
 
 rule classify_grid_search_XCMS_MF:
     input:
-        clf = '01_Classifier/XCMS-MF__classifier.pkl',
-        file = '02_Optimization/Grid_search/XCMS-MF/' \
-            '{XCMS_opt_file}__{parameter_MF}.csv',
+        clf = os.path.join(out_dir, '01_Classifier', 'XCMS-MF__classifier.pkl'),
+        file = os.path.join(
+            out_dir, '02_Optimization', 'Grid_search', 'XCMS-MF',
+            '{XCMS_opt_file}__{parameter_MF}.csv'
+        )
     output:
-        '02_Optimization/Classified/XCMS-MF/' \
+        os.path.join(
+            out_dir, '02_Optimization', 'Classified', 'XCMS-MF',
             '{XCMS_opt_file}__{parameter_MF}__classified.csv'
+        )
     params:
         raw_data = config['static_data']['data_path'],
         opt_dir = config['optimization-general']['optimization_samples'],
@@ -263,13 +309,17 @@ rule classify_grid_search_XCMS_MF:
 rule evaluate_grid_search_XCMS_MF:
     input:
         expand(
-            '02_Optimization/Classified/XCMS-MF/' \
-                '{XCMS_opt_file}__{parameter_MF}__classified.csv',
+            os.path.join(
+                out_dir, '02_Optimization', 'Classified', 'XCMS-MF', 
+                '{XCMS_opt_file}__{parameter_MF}__classified.csv'
+            ),
             XCMS_opt_file=opt_data['files'],
             parameter_MF=opt_data['params']['XCMS-MF'],
         )
     output:
-        '02_Optimization/00__XCMS-MF__best_parameters.csv'
+        os.path.join(
+            out_dir, '02_Optimization', '00__XCMS-MF__best_parameters.csv'
+        )
     wildcard_constraints:
         XCMS_opt_file = '.*(!?__par)',
         parameter_MF = 'par.*(!?__)'
@@ -285,9 +335,13 @@ rule evaluate_grid_search_XCMS_MF:
 
 rule run_XCMS_MF_all:
     input:
-        '02_Optimization/00__XCMS-MF__best_parameters.csv'
+        os.path.join(
+            out_dir, '02_Optimization', '00__XCMS-MF__best_parameters.csv'
+        )
     output:
-        '03_Peak_Picking/XCMS-MF/{XCMS_all_file}__peaks.csv',
+        os.path.join(
+            out_dir, '03_Peak_Picking', 'XCMS-MF', '{XCMS_all_file}__peaks.csv'
+        )
     conda:
         os.path.join('..', 'envs', 'R_env.yaml')
     params:
@@ -300,7 +354,9 @@ rule run_XCMS_MF_all:
             '{}.{}'.format(wildcards.XCMS_all_file, sample_data['type'])
         ),
         **utils.read_params_MF(
-            '02_Optimization/00__XCMS-MF__best_parameters.csv'
+            os.path.join(
+                out_dir, '02_Optimization', '00__XCMS-MF__best_parameters.csv'
+            )
         )
     shell:
         'Rscript {params.R_dir}/run_XCMS-MF.R {params.raw_data_file} {output} '
@@ -311,10 +367,15 @@ rule run_XCMS_MF_all:
 
 rule classify_XCMS_MF:
     input:
-        clf = '01_Classifier/XCMS-MF__classifier.pkl',
-        file = '03_Peak_Picking/XCMS-MF/{XCMS_all_file}__peaks.csv',
+        clf = os.path.join(out_dir, '01_Classifier', 'XCMS-MF__classifier.pkl'),
+        file = os.path.join(
+            out_dir, '03_Peak_Picking', 'XCMS-MF', '{XCMS_all_file}__peaks.csv'
+        )
     output:
-        '04_Final_results/00_Classified/XCMS-MF/{XCMS_all_file}__classified.csv'
+        os.path.join(
+            out_dir, '04_Final_results', '00_Classified', 'XCMS-MF',
+            '{XCMS_all_file}__classified.csv'
+        )
     params:
         raw_data = config['static_data']['data_path'],
         f_type = sample_data['type']
@@ -333,12 +394,17 @@ rule classify_XCMS_MF:
 rule merge_all:
     input:
         expand(
-            '04_Final_results/00_Classified/{algorithm}/' \
-                '{{XCMS_all_file}}__classified.csv',
+            os.path.join(
+                out_dir, '04_Final_results', '00_Classified', '{algorithm}', 
+                '{{XCMS_all_file}}__classified.csv'
+            ),
             algorithm=algorithms
         )
     output:
-        '04_Final_results/01_Merged/{XCMS_all_file}__merged.csv'
+        os.path.join(
+            out_dir, '04_Final_results', '01_Merged',
+            '{XCMS_all_file}__merged.csv'
+        )
     params:
         raw_data = config['static_data']['data_path'],
         f_type = sample_data['type'],
@@ -354,14 +420,25 @@ rule merge_all:
 
 if config['retention_index']['calculate']:
     align_tol = config['alignment']['RI_tol']
-    align_files = '04_Final_results/02_RetentionIndex/' \
+    align_files = os.path.join(
+        out_dir, '04_Final_results', '02_RetentionIndex',
         '{XCMS_all_file}__merged_RI.csv'
+    )
     rule calc_retention_index:
         input:
-            sample = '04_Final_results/01_Merged/{XCMS_all_file}__merged.csv',
-            wash = '04_Final_results/01_Merged/{}__merged.csv'.format(wash_file)
+            sample = os.path.join(
+                out_dir, '04_Final_results', '01_Merged',
+                '{XCMS_all_file}__merged.csv'
+            ),
+            wash = os.path.join(
+                out_dir, '04_Final_results', '01_Merged', 
+                '{}__merged.csv'.format(wash_file)
+            )
         output:
-            '04_Final_results/02_RetentionIndex/{XCMS_all_file}__merged_RI.csv'
+            os.path.join(
+                out_dir, '04_Final_results', '02_RetentionIndex',
+                '{XCMS_all_file}__merged_RI.csv'
+            )
         params:
             raw_data = config['static_data']['data_path'],
             f_type = sample_data['type'],
@@ -372,7 +449,9 @@ if config['retention_index']['calculate']:
             )
 else:
     align_tol = config['alignment']['RT_tol']
-    align_files = '04_Final_results/01_Merged/{XCMS_all_file}__merged.csv'
+    align_files = os.path.join(
+        out_dir, '04_Final_results', '01_Merged', '{XCMS_all_file}__merged.csv'
+    )
 
 
 rule merging_overview:
@@ -382,7 +461,7 @@ rule merging_overview:
             XCMS_all_file=sample_data['files']
         )
     output:
-        '04_Final_results/01_Merged/overview.csv'
+        os.path.join(out_dir, '04_Final_results', '01_Merged', 'overview.csv')
     run:
         with open(output[0], 'w') as f:
             f.write('\n'.join(sorted(input)))
@@ -390,9 +469,9 @@ rule merging_overview:
 
 rule align_across_groups:
     input:
-        '04_Final_results/01_Merged/overview.csv'
+        os.path.join(out_dir, '04_Final_results', '01_Merged', 'overview.csv')
     output:
-        '04_Final_results/{group}__final.csv'
+        os.path.join(out_dir, '04_Final_results', '{group}__final.csv')
     params:
         tolerance = align_tol,
         min_samples = config['alignment']['min_samples'],

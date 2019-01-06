@@ -22,7 +22,7 @@ p <- add_argument(p, '--ppm',
   help = 'mass accuracy tolerance in parts per million (int)'
 )
 p <- add_argument(p, '--config',
-  default = '../../config/XCMS-CW_default.INI',
+  default = '../../pp_configs/XCMS-CW_default.INI',
   help = 'config dir path (default: config/XCMS-CW_default.INI)'
 )
 p <- add_argument(p, '--groupCorr',

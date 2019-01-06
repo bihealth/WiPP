@@ -9,7 +9,7 @@ static_data:
 
 algorithms:
   XCMS-CW: True
-  XCMS-MF: True
+  XCMS-MF: False
 
 
 default_configs:

@@ -6,7 +6,34 @@
 
 import os
 import re
+import yaml
+import argparse
 import multiprocessing
+
+parser = argparse.ArgumentParser(description='Check configs for completeness.')
+parser.add_argument(
+    '-c', '--config', help='Path to config file'
+)
+parser.add_argument(
+    '-t', '--type', help='Config type. Valid options are "tr" and "pp"'
+)
+
+CONFIG_DEFAULTS = {
+    'static_data': {
+        'high_resolution': False, 
+        'cores': multiprocessing.cpu_count(),
+        'peak_min_width': 0.5,
+        'peak_min_mz': 3
+    },
+    'algorithms': {'XCMS-CW': True, 'XCMS-MF': True},
+    'default_configs': {
+        'directory': '../../pp_configs',
+        'XCMS-CW': 'XCMS-CW_default.INI',
+        'XCMS-MF': 'XCMS-MF_default.INI'
+    },
+    'XCMS_params': {'groupCorr': False},
+    'merging': {'RT_tol': 0.2}
+}
 
 
 class bcolors:
@@ -61,8 +88,8 @@ def evaluate_training_config(config):
                 key: file_type, values (str): sample file extensions.
 
     """
-    config = _check_basics(config)
-    config = _check_training(config)
+    config = _update_config(config, CONFIG_DEFAULTS)
+    config = _update_training(config)
 
     algorithms = [i for i, j in config['algorithms'].items() if j == True]
 
@@ -72,7 +99,6 @@ def evaluate_training_config(config):
         config['training_data-general']['training_samples']
     )
     training_data['files'], training_data['type'] = _get_files(tr_dir)
-    print('{}Config checked!\n{}'.format(bcolors.OKGREEN, bcolors.ENDC))
     return (algorithms, training_data)
 
 
@@ -98,8 +124,8 @@ def evaluate_peakpicking_config(config):
             wash_file (str): Wash file name.
 
     """
-    config = _check_basics(config)
-    config = _check_peak_picking(config)
+    config = _update_config(config, CONFIG_DEFAULTS)
+    config = _update_peak_picking(config)
 
     algorithms = [i for i, j in config['algorithms'].items() if j == True]
 
@@ -124,11 +150,18 @@ def evaluate_peakpicking_config(config):
         config['optimization-general']['optimization_samples']
     )
     optimization_data['files'], _ = _get_files(opt_dir)
-    print('{}Config checked!\n{}'.format(bcolors.OKGREEN, bcolors.ENDC))
+
     return (algorithms, sample_data, optimization_data, wash_file)
 
 
-def _check_basics(cfg):
+def check_basics(cfg):
+    """ Check if all relevant config arguments are spüecified
+
+    Args:
+        cfg (): Loaded Snakemake config.
+
+    """
+    _update_config(cfg, CONFIG_DEFAULTS, verbose=True)
     _check_config_sections(cfg, ['static_data'])
 
     if not cfg['static_data'].get('data_path', False):
@@ -136,24 +169,6 @@ def _check_basics(cfg):
             '"data_path" (section "static_data") needs to be defined'
         )
     _check_input_data(cfg['static_data']['data_path'])
-
-    config_defaults = {
-        'static_data': {
-            'high_resolution': False, 
-            'cores': multiprocessing.cpu_count(),
-            'peak_min_width': 0.5,
-            'peak_min_mz': 3
-        },
-        'algorithms': {'XCMS-CW': True, 'XCMS-MF': True},
-        'default_configs': {
-            'directory': '../../config',
-            'XCMS-CW': 'XCMS-CW_default.INI',
-            'XCMS-MF': 'XCMS-MF_default.INI'
-        },
-        'XCMS_params': {'groupCorr': False},
-        'merging': {'RT_tol': 0.2}
-    }
-    config = _update_config(cfg, config_defaults)
 
     CW_default_cfg = os.path.join(
         config['default_configs']['directory'],
@@ -171,9 +186,7 @@ def _check_basics(cfg):
         raise OSError(
             'XCMS-MF default config folder not found: {}'.format(CW_default_cfg)
         )
-
-    return config
-
+    
 
 def _check_input_data(in_path):
     if not os.path.isdir(in_path):
@@ -203,7 +216,8 @@ def _check_input_data(in_path):
         raise OSError('Nothing in subfolders of: {}'.format(in_path))
 
 
-def _check_training(cfg):
+def check_training(cfg):
+    _update_training(cfg, verbose=True)
     _check_config_sections(cfg, ['training_data-general'])
 
     if not cfg['training_data-general'].get('training_samples', False):
@@ -220,6 +234,8 @@ def _check_training(cfg):
             '"training_samples" folder not found: {}'.format(tr_data_path)
         )
 
+
+def _update_training(cfg, verbose=False):
     config_defaults = {
         'training_data-general': {'plots_per_sample': 200},
         'training_data-params': {
@@ -228,15 +244,15 @@ def _check_training(cfg):
         }
     }
     if cfg['static_data']['high_resolution']:
-        config_defaults['training_data-params']. update(
+        config_defaults['training_data-params'].update(
             {'XCMS-CW_mzdiff': [-0.1, 0, 0.1, 0.5], 'XCMS-CW_ppm': [5, 10, 20],
             'XCMS-MF_mzdiff': [-0.1, 0, 0.1, 0.5], 'XCMS-MF_steps': [1, 2, 3],
             'XCMS-MF_step': [0.1, 0.25, 0.5]}
         )
-    return _update_config(cfg, config_defaults)
+    return _update_config(cfg, config_defaults, verbose)
 
 
-def _check_peak_picking(cfg):
+def check_peak_picking(cfg):
     _check_config_sections(
         cfg, ['optimization-general', 'grid_search-params']
     )
@@ -253,7 +269,10 @@ def _check_peak_picking(cfg):
         raise OSError(
             '"optimization_samples" folder not found: {}'.format(opt_data_path)
         )
+    _update_peak_picking(cfg, verbose=True)
 
+
+def _update_peak_picking(cfg, verbose=False):
     config_defaults = {
         'classifier': {
             'path': '', 'SVM': True, 'RF': False,
@@ -286,7 +305,7 @@ def _check_peak_picking(cfg):
             'XCMS-MF_step': [0.1, 0.2, 0.3, 0.4, 0.5],
             'XCMS-MF_steps': [1, 2, 3]}
         )
-    config = _update_config(cfg, config_defaults)
+    config = _update_config(cfg, config_defaults, verbose)
     if not config['retention_index'].get('wash', False):
         config['retention_index']['wash'] = 'not_defined'
 
@@ -299,20 +318,22 @@ def _check_config_sections(cfg, sections):
             raise ConfigError('Section "{}" needs to be defined'.format(sec))
 
 
-def _update_config(cfg, update_dict):
+def _update_config(cfg, update_dict, verbose=False):
     for section, section_args in update_dict.items():
         if not cfg.get(section, False):
-            print(
-                '{}Section "{}" not defined: added{}' \
-                    .format(bcolors.WARNING, section, bcolors.ENDC)
-            )
+            if verbose:
+                print(
+                    '{}Section "{}" not defined: added{}' \
+                        .format(bcolors.WARNING, section, bcolors.ENDC)
+                )
             cfg[section] = {}
 
         for arg, arg_default in section_args.items():
             if not arg in cfg[section]:
-                message = '"{}" (section "{}") not defined: set to "{}"' \
-                    .format(arg, section, arg_default)
-                print('{}{}{}'.format(bcolors.WARNING, message, bcolors.ENDC))
+                if verbose:
+                    message = '"{}" (section "{}") not defined: set to "{}"' \
+                        .format(arg, section, arg_default)
+                    print('{}{}{}'.format(bcolors.WARNING, message, bcolors.ENDC))
                 cfg[section][arg] = arg_default
     return cfg
     
@@ -409,11 +430,16 @@ def read_params_CW(in_file):
             key (str): parameter name
             value (str): parater value  
     """
+    if not os.path.isfile(in_file):
+        import pdb; pdb.set_trace()
+        return {}
+
     params_raw = _read_params_raw(in_file)
     params = {
         'pwMin': params_raw['par0'], 'pwMax': params_raw['par1'],
         'mzdiff': params_raw.get('par2', ''), 'ppm': params_raw.get('par3', '')
     }
+
     return params
 
 
@@ -428,6 +454,9 @@ def read_params_MF(in_file):
             key (str): parameter name
             value (str): parater value  
     """
+    if not os.path.isfile(in_file):
+        return {}
+
     params_raw = _read_params_raw(in_file)
     params = {
         'fwhm': params_raw['par0'], 'sn': params_raw['par1'],
@@ -444,4 +473,20 @@ def _read_params_raw(in_file):
 
 
 if __name__ == '__main__':
-    print('There is nothing here...')
+    args = parser.parse_args()
+
+    config_file = args.config
+    if config_file == '':
+        config_file = 'config.yaml'
+    with open(config_file, 'r') as f:
+        config = yaml.load(f)
+
+    check_basics(config)
+    if args.type == 'tr':
+        check_training(config)
+    elif args.type == 'pp':
+        check_peak_picking(config)
+    else:
+        raise TypeError('Unknown config type: {}'.format(args.type))
+
+    print('{}Config checked!\n{}'.format(bcolors.OKGREEN, bcolors.ENDC))

@@ -14,7 +14,7 @@ R_lib_dir = os.path.join(base_dir, 'lib', 'R')
 R_utils_file = os.path.join(R_lib_dir, 'utils.R')
 py_lib_dir = os.path.join(base_dir, 'lib', 'python')
 sys.path.append(py_lib_dir)
-import pdb; pdb.set_trace()
+
 # Import Pipeline modules
 import utils
 import peak_visualization as pvis
@@ -25,14 +25,18 @@ configfile: 'config.yaml'
 # proof check config data and get relevant data
 algorithms, tr_data = utils.evaluate_training_config(config)
 groupCorr_str = '' if not config['XCMS_params']['groupCorr'] else '--groupCorr'
-
+out_dir = config['static_data'].get('output_dir', '')
+if out_dir == '.':
+    out_dir = ''
 
 # Final output rule
 rule all:
     input:
         expand(
-            '00_Training/02_Visualization/' \
-                '{algorithm}__{tr_file}__visualization_overview.csv',
+            os.path.join(
+                out_dir, '00_Training', '02_Visualization',
+                '{algorithm}__{tr_file}__visualization_overview.csv'
+            ),
             algorithm=algorithms,
             tr_file=tr_data['files']
         )
@@ -53,7 +57,10 @@ rule run_CW:
             '{}.{}'.format('{tr_file}', tr_data['type'])
         )
     output:
-        '00_Training/00_Peak_Picking/XCMS-CW/{tr_file}__{parameter_CW}.csv'
+        os.path.join(
+            out_dir, '00_Training', '00_Peak_Picking', 'XCMS-CW',
+            '{tr_file}__{parameter_CW}.csv'
+        )
     conda:
         os.path.join('..', 'envs', 'R_env.yaml')
     params:
@@ -83,11 +90,16 @@ rule run_CW:
 rule merge_XCMS_CW_training:
     input:
         expand(
-            '00_Training/00_Peak_Picking/XCMS-CW/{{tr_file}}__{parameter_CW}.csv',
+            os.path.join(
+                out_dir, '00_Training', '00_Peak_Picking', 'XCMS-CW',
+                '{{tr_file}}__{parameter_CW}.csv'
+            ), 
             parameter_CW=tr_data['params']['XCMS-CW'],
-        )  
+        )
     output:
-        '00_Training/01_Merging/XCMS-CW/{tr_file}__merged.csv'
+        os.path.join(
+            '00_Training', '01_Merging', 'XCMS-CW', '{tr_file}__merged.csv'
+        )
     wildcard_constraints:
         XCMS_tr_file='.*(?!__)'
     params:
@@ -113,7 +125,10 @@ rule run_MF:
             '{}.{}'.format('{tr_file}', tr_data['type'])
         )
     output:
-        '00_Training/00_Peak_Picking/XCMS-MF/{tr_file}__{parameter_MF}.csv'
+        os.path.join(
+            out_dir, '00_Training', '00_Peak_Picking', 'XCMS-MF',
+            '{tr_file}__{parameter_MF}.csv'
+        )
     conda:
         os.path.join('..', 'envs', 'R_env.yaml')
     params:
@@ -148,11 +163,17 @@ rule run_MF:
 rule merge_XCMS_MF_training:
     input:
         expand(
-            '00_Training/00_Peak_Picking/XCMS-MF/{{tr_file}}__{parameter_MF}.csv',
+            os.path.join(
+                out_dir, '00_Training', '00_Peak_Picking', 'XCMS-MF',
+                '{{tr_file}}__{parameter_MF}.csv'
+            ), 
             parameter_MF=tr_data['params']['XCMS-MF']
         )  
     output:
-        '00_Training/01_Merging/XCMS-MF/{tr_file}__merged.csv'
+        os.path.join(
+            out_dir, '00_Training', '01_Merging', 'XCMS-MF',
+            '{tr_file}__merged.csv'
+        )
     wildcard_constraints:
         XCMS_tr_file='.*(?!__)'
     params:
@@ -172,17 +193,22 @@ rule merge_XCMS_MF_training:
 
 rule visualize_training_data:
     input:
-        '00_Training/01_Merging/{algorithm}/{tr_file}__merged.csv'
+        os.path.join(
+            out_dir, '00_Training', '01_Merging', '{algorithm}', 
+            '{tr_file}__merged.csv'
+        )
     output:
-        '00_Training/02_Visualization/' \
+        os.path.join(
+            out_dir, '00_Training', '02_Visualization',
             '{algorithm}__{tr_file}__visualization_overview.csv'
+        )
     params:
         raw_data = config['static_data']['data_path'],
         train_dir = config['training_data-general']['training_samples'],
         file_type = tr_data['type'],
         plot_no = config['training_data-general']['plots_per_sample']
     threads:
-        config['static_data']['cores']
+        config['training_data-general']['plots_per_sample']
     run:
         pvis.visualize_peaks(
             input[0], params.raw_data, params.train_dir, params.file_type,

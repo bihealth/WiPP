@@ -10,6 +10,7 @@ import sys
 import re
 import shutil
 import math
+import time
 import pickle
 import pandas as pd
 import numpy as np
@@ -405,6 +406,9 @@ def evaluate_grid_search(res_files, out_file, raw_data_dir, f_type, scoring):
     overview_file = out_file.replace('00', '01') \
         .replace('best_parameters', 'all_results') 
     results.to_csv(overview_file, sep='\t')
+    # Sleep 1 sec before continuing pipeline to prevent tangling
+    time.sleep(1)
+
 
 
 def merge_detected_peaks(peak_files, out_file, raw_data_dir, f_type, tol,

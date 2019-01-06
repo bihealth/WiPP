@@ -28,7 +28,7 @@ p <- add_argument(p, '--steps',
 )
 
 p <- add_argument(p, '--config',
-  default = '../../config/XCMS-MF_default.INI',
+  default = '../../pp_configs/XCMS-MF_default.INI',
   help = 'config dir path (default: config/XCMS-MF_default.INI)'
 )
 p <- add_argument(p, '--groupCorr',
