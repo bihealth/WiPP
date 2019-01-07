@@ -8,6 +8,7 @@ set, and cross-sample alignment.
 
 import sys
 import os
+from pytools.persistent_dict import PersistentDict
 # Add path to R and python libraries
 base_dir = os.environ['WIPP_PATH']
 py_lib_dir = os.path.join(base_dir, 'lib', 'python')
@@ -25,10 +26,18 @@ configfile: 'config.yaml'
 # proof check config data and get relevant data
 algorithms, sample_data, opt_data, wash_file = \
     utils.evaluate_peakpicking_config(config)
+opt_params = PersistentDict('parameters')
 groupCorr_str = '' if not config['XCMS_params']['groupCorr'] else '--groupCorr'
 out_dir = config['static_data'].get('output_dir', '')
 if out_dir == '.':
     out_dir = ''
+
+
+def get_opt_param(alg, par):
+    try:
+        return opt_params.fetch('{}__{}'.format(alg, par))
+    except:
+        return ''
 
 
 rule all:
@@ -165,28 +174,19 @@ rule evaluate_grid_search_XCMS_CW:
         raw_data = config['static_data']['data_path'],
         f_type = sample_data['type']
     run:
-        pp.evaluate_grid_search(
+        params = pp.evaluate_grid_search(
             input, output[0], 
             params.raw_data, params.f_type, config['optimization-score']
         )
-
-rule wait:
-    input: 
-        os.path.join(
-            out_dir, '02_Optimization', '00__XCMS-CW__best_parameters.csv'
-        )
-    output:
-        os.path.join(out_dir, '02_Optimization', 'rdy.txt')
-    shell:
-        'touch {output} && sleep 3'
+        for key, val in params.items():
+            opt_params.store('CW__{}'.format(key), val)
 
 
 rule run_XCMS_CW_all:
     input:
-        # os.path.join(
-        #     out_dir, '02_Optimization', '00__XCMS-CW__best_parameters.csv'
-        # ),
-        os.path.join(out_dir, '02_Optimization', 'rdy.txt')
+        os.path.join(
+            out_dir, '02_Optimization', '00__XCMS-CW__best_parameters.csv'
+        ),
     output:
         os.path.join(
             out_dir, '03_Peak_Picking', 'XCMS-CW', '{XCMS_all_file}__peaks.csv'
@@ -202,11 +202,10 @@ rule run_XCMS_CW_all:
             config['static_data']['data_path'],
             '{}.{}'.format(wildcards.XCMS_all_file, sample_data['type'])
         ),
-        **utils.read_params_CW(
-            os.path.join(
-                out_dir, '02_Optimization', '00__XCMS-CW__best_parameters.csv'
-            )
-        )
+        pwMin = get_opt_param('CW', 'par0'),
+        pwMax = get_opt_param('CW', 'par1'),
+        mzdiff = get_opt_param('CW', 'par2'),
+        ppm = get_opt_param('CW', 'par3')
     shell:
         'Rscript {params.R_dir}/run_XCMS-CW.R {params.raw_data_file} {output} '
         '--peakwidth {params.pwMin} {params.pwMax} {params.mzdiff} {params.ppm} '
@@ -327,10 +326,12 @@ rule evaluate_grid_search_XCMS_MF:
         raw_data = config['static_data']['data_path'],
         f_type = sample_data['type']
     run:
-        pp.evaluate_grid_search(
+        params = pp.evaluate_grid_search(
             input, output[0], 
             params.raw_data, params.f_type, config['optimization-score']
         )
+        for key, val in params.items():
+            opt_params.store('MF__{}'.format(key), val)
 
 
 rule run_XCMS_MF_all:
@@ -353,11 +354,11 @@ rule run_XCMS_MF_all:
             config['static_data']['data_path'],
             '{}.{}'.format(wildcards.XCMS_all_file, sample_data['type'])
         ),
-        **utils.read_params_MF(
-            os.path.join(
-                out_dir, '02_Optimization', '00__XCMS-MF__best_parameters.csv'
-            )
-        )
+        fwhm = get_opt_param('MF', 'par0'),
+        sn = get_opt_param('MF', 'par1'),
+        mzdiff = get_opt_param('MF', 'par2'),
+        step = get_opt_param('MF', 'par3'),
+        steps = get_opt_param('MF', 'par4')
     shell:
         'Rscript {params.R_dir}/run_XCMS-MF.R {params.raw_data_file} {output} '
         '--fwhm {params.fwhm} --sn {params.sn} {params.mzdiff} {params.step} '

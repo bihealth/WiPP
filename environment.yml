@@ -65,3 +65,4 @@ dependencies:
     - scipy==1.1.0
     - sklearn==0.0
     - snakemake==5.3.1
+    - pytools==2018.5.2

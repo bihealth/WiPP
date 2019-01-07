@@ -398,16 +398,18 @@ def evaluate_grid_search(res_files, out_file, raw_data_dir, f_type, scoring):
     # Get mean scores and highest scored parameters
     results['mean'] = results.mean(axis=1)
     par_best = results['mean'].idxmax()
+    par_best_dict = {}
     with open(out_file, 'w') as f:
         for idx, par_str in enumerate(results.index.names):
             f.write('{}\t{}\n'.format(par_str, par_best[idx]))
+            par_best_dict[par_str] = par_best[idx]
 
     # Save all results 
     overview_file = out_file.replace('00', '01') \
         .replace('best_parameters', 'all_results') 
     results.to_csv(overview_file, sep='\t')
     # Sleep 1 sec before continuing pipeline to prevent tangling
-    time.sleep(1)
+    return par_best_dict
 
 
 

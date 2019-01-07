@@ -10,6 +10,7 @@ import yaml
 import argparse
 import multiprocessing
 
+
 parser = argparse.ArgumentParser(description='Check configs for completeness.')
 parser.add_argument(
     '-c', '--config', help='Path to config file'
@@ -417,59 +418,6 @@ def _get_parameters(config, param_section):
         final_params[alg] = combi_str
 
     return final_params
-
-
-def read_params_CW(in_file):
-    """ Read XCMS-CW parameters from a txt file
-
-    Args:
-        in_file (str): path to parameter file
-
-    Returns:
-        dict:
-            key (str): parameter name
-            value (str): parater value  
-    """
-    if not os.path.isfile(in_file):
-        import pdb; pdb.set_trace()
-        return {}
-
-    params_raw = _read_params_raw(in_file)
-    params = {
-        'pwMin': params_raw['par0'], 'pwMax': params_raw['par1'],
-        'mzdiff': params_raw.get('par2', ''), 'ppm': params_raw.get('par3', '')
-    }
-
-    return params
-
-
-def read_params_MF(in_file):
-    """ Read XCMS-MF parameters from a txt file
-
-    Args:
-        in_file (str): path to parameter file
-
-    Returns:
-        dict:
-            key (str): parameter name
-            value (str): parater value  
-    """
-    if not os.path.isfile(in_file):
-        return {}
-
-    params_raw = _read_params_raw(in_file)
-    params = {
-        'fwhm': params_raw['par0'], 'sn': params_raw['par1'],
-        'mzdiff': params_raw.get('par2', ''), 'step': params_raw.get('par3', ''),
-        'steps': params_raw.get('par4', '')
-    }
-    return params
-
-
-def _read_params_raw(in_file):
-    with open(in_file, 'r') as f:
-        params_raw = f.read().strip()
-    return {i.split('\t')[0]: i.split('\t')[1] for i in params_raw.split('\n')}
 
 
 if __name__ == '__main__':
