@@ -57,7 +57,7 @@ class ConfigError(Exception):
         super().__init__('\n{}\n'.format(message))
 
 
-def split_path(f, l=None):
+def split_path(f):
     """ Split a file path in it's different levels.
 
     Args:
@@ -66,13 +66,7 @@ def split_path(f, l=None):
     Returns:
         list of str: each str is one level in the file system.
     """
-    if l == None:
-        l = []
-    if os.path.basename(f) == f:
-        return l[::-1]
-    else:
-        l.append(os.path.basename(f))
-        return split_path(os.path.dirname(f), l)
+    return f.split(os.sep)
 
 
 def evaluate_training_config(config):
