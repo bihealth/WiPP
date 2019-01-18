@@ -159,7 +159,7 @@ def run_classification(vis_file_path, out_dir, pdf_cmd):
 
     try:
         data.drop(['index', 'level_0'], axis=1, inplace=True)
-    except ValueError:
+    except ValueError, KeyError:
         pass
 
     # Finale save
