@@ -9,7 +9,7 @@ import sys
 import os
 import re
 # Add path to R and python libraries
-base_dir = '..'
+base_dir = os.environ['WIPP_PATH']
 R_lib_dir = os.path.join(base_dir, 'lib', 'R')
 R_utils_file = os.path.join(R_lib_dir, 'utils.R')
 py_lib_dir = os.path.join(base_dir, 'lib', 'python')
