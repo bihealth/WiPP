@@ -370,7 +370,11 @@ class DetectedPeaks():
                 (self.data['rt'] >= old_alk[0]) & (self.data['rt'] <= alk[0])
             ]
             new_RI = scale_range(aff_peaks['rt'], old_alk, alk)
-            RI = RI.append(new_RI, sort=False)
+            # Old pandas versions require arg sort=False or will throw an warning
+            try:
+                RI = RI.append(new_RI, sort=False)
+            except TypeError:
+                RI = RI.append(new_RI)
             old_alk = alk
 
         self.data['RI'] = RI.dropna().drop_duplicates()
