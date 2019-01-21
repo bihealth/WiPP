@@ -55,4 +55,3 @@ python3 "$CONFIG_CHECK" -c "$config" -t "$WIPP_MODE"
 echo ''
 echo 'Running Snakemake:'
 snakemake -s "$SNAKEMAKE_EXE" --use-conda -k --cores "$cores" --configfile "$config"
-

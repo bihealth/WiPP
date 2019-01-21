@@ -171,7 +171,7 @@ def _search_sample_alkanes(data, wash_alks, wash_rt_tol, alk_no):
                 & (data['rt'] < wash_alk_rt + wash_rt_tol)
                 & (data['rt'] < wash_alk_rt + wash_rt_tol) \
                 & ((data['class'] == 2) | (data['class'] == 5))
-        ]
+        ].copy()
         
         if pos_peaks.empty:
             alkanes.append((wash_alk_rt, None))
