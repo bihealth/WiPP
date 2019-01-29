@@ -2,7 +2,7 @@
 
 
 # Installation
-git clone https://github.com/bihealth/wipp_dev.git
+git clone https://github.com/bihealth/wipp_dev.git \n
 cd wipp_dev
 make
 
