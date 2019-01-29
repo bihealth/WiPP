@@ -1,5 +1,8 @@
 # WiPP - A **W**orkflow for **i**mproved **P**eak **D**etection
 
+## Requirements
+- conda
+- libnetcdf11 (required by R - CAMERA)
 
 ## Installation
 ```bash
