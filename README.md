@@ -2,10 +2,11 @@
 
 
 # Installation
-git clone https://github.com/bihealth/wipp_dev.git \
-cd wipp_dev \
+```bash
+git clone https://github.com/bihealth/wipp_dev.git
+cd wipp_dev
 make
-
+```
 
 # Running of test project
 
