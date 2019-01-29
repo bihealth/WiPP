@@ -23,6 +23,8 @@ cd ./projects/example_project
 ```bash
 ../../run_WiPP.sh tr -n 4 
 ```
+(Note: Running this for the first time takes a while: another conda environment is created)
+
 3. Call peak annotation
 ```bash
 ../../run_WiPP.sh an
