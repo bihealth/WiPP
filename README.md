@@ -31,7 +31,7 @@ cd ./projects/example_project
 ```
 To use an already trained example classifier, uncomment the following line in the *config.yaml* file:
 ```
-path: example_classifier
+# path: example_classifier
 ```
 
 4. Call peak picking with n nodes (example: n = 4)
