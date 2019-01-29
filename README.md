@@ -1,14 +1,14 @@
-# wipp_dev
+# WiPP (Workflow for improved Peak Detection)
 
 
-# Installation
+## Installation
 ```bash
 git clone https://github.com/bihealth/wipp_dev.git
 cd wipp_dev
 make
 ```
 
-# Running of test project
+## Running of test project
 
 1. Change in directory
 ```bash
@@ -26,5 +26,5 @@ cd ./projects/example_project
 ```bash
 ../../run_WiPP.sh pp -n 4 
 ```
-
+## Further details
 TODO <YG, 2018.09.06> Update
