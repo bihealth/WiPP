@@ -13,7 +13,7 @@ make
 
 ## Running of test project
 
-1. Change in directory
+1. Change into example_project directory
 ```bash
 cd ./projects/example_project
 ```
