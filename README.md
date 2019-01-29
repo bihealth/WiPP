@@ -2,6 +2,9 @@
 Some introduction text \
 TODO <YG, 2018.09.06> Update
 
+## License
+WiPP v 1.0 is release under the MIT License. 
+
 ## Requirements
 - conda
 - libnetcdf11
