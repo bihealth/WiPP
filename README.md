@@ -14,7 +14,7 @@ cd ./projects/example_project
 # Call training data generation with n nodes (example: n = 4)
 ../../run_WiPP.sh tr -n 4 
 # Call peak annotation
-../../run_WiPP.sh ann
+../../run_WiPP.sh an
 # Call peak picking with n nodes (example: n = 4)
 ../../run_WiPP.sh pp -n 4 
 
