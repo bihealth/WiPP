@@ -20,6 +20,8 @@ make
 cd ./projects/example_project
 ```
 2. Call training data generation with n nodes (example: n = 4)
+
+(Note: Running this for the first time takes a while: another conda environment is created)
 ```bash
 ../../run_WiPP.sh tr -n 4 
 ```
