@@ -19,14 +19,14 @@ elif [ "$WIPP_MODE" == "pp" ]
 then
     echo 'Running WiPP - Peak Picking'
     SNAKEMAKE_EXE+="/bin/Snakefile_pp"
-elif [ "$WIPP_MODE" == "ann" ]
+elif [ "$WIPP_MODE" == "an" ]
 then
     ANNOTATION_EXE="$WIPP_PATH"
     ANNOTATION_EXE+="/lib/python/peak_annotation.py"
     python3 "$ANNOTATION_EXE"
     exit
 else
-    echo 'Unknown Mode: $WIPP_MODE. Allowed are: tr|pp'
+    echo 'Unknown Mode: $WIPP_MODE. Allowed are: tr|an|pp'
     exit 1
 fi
 shift

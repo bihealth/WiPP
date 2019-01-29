@@ -392,7 +392,7 @@ class DetectedPeaks():
         if 'class' in self.data.columns and 'class' in peaks2.get_data().columns:
             self.data, concatenated, dropped = \
                 self._join_classified_data(peaks2, tol)
-
+            import pdb; pdb.set_trace()
             self.concatenated = self.concatenated.append(concatenated, sort=False)
             self.dropped = self.dropped.append(dropped, sort=False)
         else:
@@ -459,7 +459,7 @@ class DetectedPeaks():
         # Actual merging, concatenating and dropping (see function)
         new_data = self._sort_and_idx_reset(new_data, match_cols)
         new_data, concatenated, dropped = self._merging_classified(new_data, tol)
-        # Add peaks classified as boise to dropped ones
+        # Add peaks classified as noise to dropped ones
         dropped = dropped.append(new_data_all[fp], sort=False)
         dropped['reason'].fillna('noise', inplace=True)
         return (new_data, concatenated, dropped)
@@ -534,9 +534,11 @@ class DetectedPeaks():
 
             # Keep merged peaks
             if peak_1['class'] == 5 or peak_2['class'] == 5:
-                drop, concat = self._concat_peaks(data.loc[[idx[0], idx[1]]])
-                drop_dict[drop] = 'concatenated'
-                add_df = add_df.append(concat, sort=False)
+                continue
+                # drop, concat = self._concat_peaks(data.loc[[idx[0], idx[1]]])
+                # drop_dict[drop] = 'concatenated'
+                # add_df = add_df.append(concat, sort=False)
+                # import pdb; pdb.set_trace()
             # Merge same peaks (if not classified as merged)
             elif peak_1['class'] == peak_2['class']:
                 drop_dict[peak_1.name] = 'merged'
@@ -551,6 +553,10 @@ class DetectedPeaks():
                 drop_dict[peak_2.name] = 'other_2'
             elif peak_2['class'] == 2:
                 drop_dict[peak_1.name] = 'other_2'
+            elif peak_1['class'] == 9:
+                drop_dict[peak_1.name] = 'false_positive'
+            elif peak_2['class'] == 9:
+                drop_dict[peak_2.name] = 'false_positive'
             # One peaks apex is shifted, other one's "more bad": keep shifted one
             elif peak_1['class'] in [1, 3] and peak_2['class'] not in [1, 3]:
                 drop_dict[peak_2.name] = 'other_1,3'
@@ -571,7 +577,7 @@ class DetectedPeaks():
                         .format(peak_1['class'], peak_2['class'] )
                 )
         dropped_raw = pd.concat(
-            [data.loc[drop_dict.keys()], pd.Series(drop_dict,name='reason')],
+            [data.loc[drop_dict.keys()], pd.Series(drop_dict, name='reason')],
             axis=1
         )
         dropped = dropped_raw[
@@ -583,7 +589,7 @@ class DetectedPeaks():
                 dup_merge = self._merge_peaks(add_df.loc[dup_idx], dup_idx)
                 add_df.drop(dup_idx, inplace=True)
                 add_df.append(dup_merge, sort=False)
-        return (data.drop(drop_dict.keys()), add_df, dropped)
+        return data.drop(drop_dict.keys()), add_df, dropped
 
 
     def _merge_mz_strings(self, s):

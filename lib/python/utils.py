@@ -359,7 +359,11 @@ def _get_files(file_path):
 
     samples = [i for i in os.listdir(file_path)]
     sample_names = list(set([re.sub('\.[a-zA-Z]+$', '', i) for i in samples]))
-    file_type = [i for i in samples if not i.endswith('pkl')][0].split('.')[-1]
+    try:
+        file_type = [i for i in samples if not i.endswith('pkl')][0] \
+            .split('.')[-1]
+    except IndexError:
+        file_type = None
     return (sample_names, file_type)
         
 
