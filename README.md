@@ -2,7 +2,7 @@
 
 ## Requirements
 - conda
-- libnetcdf11 (required by R - CAMERA)
+- libnetcdf11 (required by R package CAMERA)
 
 ## Installation
 ```bash
