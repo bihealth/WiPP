@@ -9,7 +9,7 @@ WiPP v 1.0 is release under the MIT License.
 WiPP has been tested successfully with:
 - Ubuntu 16 (Xenial Xerus)
 
-Ubuntu 18 is not supported yet due to lacking support of incorporated R packages.
+Ubuntu 18 (Bionic Beaver) is not supported yet due to lacking support of incorporated R packages.
 
 
 ## Requirements
