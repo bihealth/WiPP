@@ -1,4 +1,4 @@
-# WiPP (Workflow for improved Peak Detection)
+# WiPP - A **W**orkflow for **i**mproved **P**eak **D**etection
 
 
 ## Installation
