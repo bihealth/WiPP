@@ -41,7 +41,7 @@ training_data-params:
 classifier:
   SVM: True
   RF: False
-  # path: trained_classifier
+  # path: example_classifier
   validation_set_size: 0.2
   cross_validation_splits: 3
 
