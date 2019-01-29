@@ -1,5 +1,6 @@
 # WiPP - A **W**orkflow for **i**mproved **P**eak **D**etection
-Some introduction text: TODO <YG, 2018.09.06> Update
+Some introduction text \
+TODO <YG, 2018.09.06> Update
 
 ## Requirements
 - conda
