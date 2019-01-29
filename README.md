@@ -38,5 +38,13 @@ To use an already trained example classifier, uncomment the following line in th
 ```bash
 ../../run_WiPP.sh pp -n 4 
 ```
+## Troubleshooting
+- *there is no package called ‘MSnbase’*
+
+Add the following line **to the top** of the file "envs/R_env.yaml" und the section "dependencies":
+```
+- bioconductor-msnbase=2.4.0=r341h470a237_1
+```
+
 ## Further details
 TODO <YG, 2018.09.06> Update
