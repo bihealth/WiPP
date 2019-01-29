@@ -4,7 +4,7 @@ TODO <YG, 2018.09.06> Update
 
 ## Requirements
 - conda
-- libnetcdf11 (required by R package CAMERA)
+- libnetcdf11
 
 ## Installation
 ```bash
