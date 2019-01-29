@@ -9,14 +9,21 @@ make
 
 # Running of test project
 
-# Change in directory
+1. Change in directory
+```bash
 cd ./projects/example_project
-# Call training data generation with n nodes (example: n = 4)
+```
+2. Call training data generation with n nodes (example: n = 4)
+```bash
 ../../run_WiPP.sh tr -n 4 
-# Call peak annotation
+```
+3. Call peak annotation
+```bash
 ../../run_WiPP.sh an
-# Call peak picking with n nodes (example: n = 4)
+```
+4. Call peak picking with n nodes (example: n = 4)
+```bash
 ../../run_WiPP.sh pp -n 4 
-
+```
 
 TODO <YG, 2018.09.06> Update
