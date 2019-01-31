@@ -1,6 +1,6 @@
-# Workflow for improved Peak Picking (WiPP) user guide
+# WiPP - A **W**orkflow for **i**mproved **P**eak **P**ickng - User Guide
 
-**WiPP** is an open source large scale GC-MS data preprocessing workflow built in python that uses machine learning to optimise, automate and combine peak detection process of commonly used peak picking algorithms.
+**WiPP** is an open source large scale GC-MS data preprocessing workflow built in Python 3 that uses machine learning to optimise, automate and combine the peak detection process of commonly used peak picking algorithms.
 
 **WiPP** has been developed as a collaborative effort between the Berlin Institute of Health (BIH) Metabolomics platform, the BIH Core Unit Bioinformatics, the INRA Plateforme d'Exploration du Métabolisme, and the INRA Laboratoire d'Etude des Résidus et Contaminants dans les Aliments.
 
@@ -11,15 +11,15 @@ If you plan to use this tool on an HPC, you will probably need some help from yo
 
 Using **WiPP** also requires some basic understanding of GC-MS analyses and the underlying data. If you are not familiar with GC-MS at all, this tool is probably not right for you. But we hope to see you soon when the time has come!
 
-## How does WiPP works?
+## How does **WiPP** work?
 
-The tool uses machine learning approaches to classify the quality of the peaks detected by existing methods (currently XCMS CentWave & MatchedFilter) to optimise the parameter settings of each individual algorithms. The workflow then classifies and combine peaks identified by individual algorithms to generate a final high-quality peak list, automatically removing false positive peaks.
+The tool uses machine learning approaches to classify the quality of the peaks detected by existing methods (currently XCMS CentWave & XCMS MatchedFilter) to optimise the parameter settings of each individual algorithms. The workflow then classifies and combine peaks identified by individual algorithms to generate a final high-quality peak set, automatically removing false positive peaks.
 
 ## Tell me more about WiPP
 
-**WiPP** is implemented in python using **[Snakemake](https://snakemake.readthedocs.io/en/stable/)**, a reproducible and scalable workflow management system, and distributed as a **[Bioconda package](https://bioconda.github.io/)** under the [type] licence.
+**WiPP** is implemented in Python 3 using **[Snakemake](https://snakemake.readthedocs.io/en/stable/)**, a reproducible and scalable workflow management system, and distributed via github under the [MIT licence](../LICENSE.md).
 
-**WiPP** offers a modular design to allow the addition of other existing peak picking algorithm and can be run on a local computer as well as on an HPC. It has been tested on both MacOS and Linux operating systems and we recommend to use one of them.
+**WiPP** offers a modular design to allow the addition of other existing peak picking algorithm and can be run on a local computer as well as on an HPC. It has been tested on Ubuntu 16.x operating system.
 
 ### Workflow overview
 
@@ -48,7 +48,7 @@ At this stage, the tool has established the optimal parameters of the selected p
 That is all the basics you need to know about **WiPP**! Now let's get started with the technical part on how to use the tool. 
 
 > ###Note
-> If you want to know more about the underlying data processing such as the scoring function, baseline correction or optimization, take a look at the paper available [here](Add link) (empty link until paper published).
+> If you want to know more about the underlying data processing such as the scoring function, baseline correction or optimization, take a look at the [paper available]() (empty link until paper published).
 
 
 ## What data do WiPP supports?
