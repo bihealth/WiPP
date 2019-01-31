@@ -98,46 +98,32 @@ def _search_wash_alkanes(data, mass_cols, alk_no, wash_rt_tol):
     # Iterate over specific masses
     for col in mass_cols:
         # Iterate over nine highest intensity peaks
-        highest_peaks = data[col].sort_values(ascending=False)[:alk_no].index
-        for pos, idx in enumerate(highest_peaks):
-            peak = (data.loc[idx]['rt'], data.loc[idx].name)
+        added = 0
+        highest_peaks = data.sort_values(by=col, ascending=False)
+        for peak_idx, peak_data in highest_peaks.iterrows():
+            peak = (peak_data['rt'], peak_idx)
             # Count how often peak is among highest nine intesities
-            try:
-                pos_alks[peak].append(pos)
-            except KeyError:
-                pos_alks[peak] = [pos]
-    # exclude multiple peaks within the tolerance window
-    rts_dict = {i[0]: i for i in pos_alks.keys()}
-    rts = sorted(sorted(rts_dict))
+            duplicate = False
+            for added_peak in pos_alks:
+                if added_peak[0] == peak_data['rt']:
+                    break
+                elif abs(added_peak[0] - peak_data['rt']) < wash_rt_tol:
+                    duplicate = True
+                    break
+            if not duplicate:
+                try:
+                    pos_alks[peak].append(added)
+                except KeyError:
+                    pos_alks[peak] = [added]
 
-    delete = []
-    while True:
-        overlap = False
-        for idx, rt in enumerate(rts[:-1]):
-            if sorted(rts)[idx+1] - rt < wash_rt_tol:
-                peak1 = pos_alks[rts_dict[rt]]
-                peak2 = pos_alks[rts_dict[sorted(rts)[idx+1]]]
-                if len(peak1) > len(peak2):
-                    delete.append(rts_dict[sorted(rts)[idx+1]])
-                    rts.remove(sorted(rts)[idx+1])
-                elif len(peak1) < len(peak2):
-                    delete.append(rts_dict[rt])
-                    rts.remove(rt)
-                elif sum(peak2) > sum(peak1):
-                    delete.append(rts_dict[sorted(rts)[idx+1]])
-                    rts.remove(sorted(rts)[idx+1])
-                else:
-                    delete.append(rts_dict[rt])
-                    rts.remove(rt)
-                overlap = True
-                break
-        if not overlap or len(rts) < 2:
-            break
+                added += 1
+                if added == alk_no:
+                    break
 
-    for del_key in delete:
-        del pos_alks[del_key]
-
-    alks = sorted(pos_alks.items(), key=lambda x: x[1], reverse=True)[:alk_no]
+    alks = sorted(
+        pos_alks.items(), key=lambda x: (len(x[1]), 24 - sum(x[1])),
+        reverse=True
+    )[:alk_no]
     return [i[0][1] for i in alks]
 
 
