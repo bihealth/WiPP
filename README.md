@@ -98,14 +98,8 @@ The `Optimization_samples` directory is similar to the `Training_samples` direct
 
 This tutorial only shows the minimum requirements to run the pipeline, to learn more about all pipeline settings, have a look at the pipeline settings section of the [complete user guide](documentation/USERGUIDE.md).
 
-All general pipeline settings are stored in the config.yaml of the individual project folder and need to be created for every new project. You can have alook at the example in the example_project directory that you find here:
+All general pipeline settings are stored in the config.yaml of the individual project folder and need to be created for every new project. You can have alook at the [example config](projects/example_project/config.yaml) from the example_project.
 
-```
-WiPP/
-	projects/
-		example_project/
-			config.yaml
-```
 First, you need to define the absolute path to your `Input_folder`. This parameter can be found in the `static_data` block under the name `absolute_path`. You also need to specify the resolution of your data by setting the `high_resolution` parameter to `True` or `False`.
 
 Next, if you have a `Wash` directory for retention index calculation, go to the `retention_index` block. You need to define the relative path from the `Input_folder` to the `wash_folder`. In our example, this parameter would look like this `./Wash`.
