@@ -1,27 +1,23 @@
 # WiPP - A **W**orkflow for **i**mproved **P**eak **D**etection
-Some introduction text \
-TODO <YG, 2018.09.06> Update
+**Workflow for improved Peak Picking** (**WiPP**) is an open source large scale GC-MS data preprocessing workflow built in python that uses machine learning to optimise, automate and combine peak detection process of commonly used peak picking algorithms.
 
-## License
-WiPP v 1.0 is release under the MIT License. 
+**WiPP** has been developed as a collaborative effort between the Berlin Institute of Health (BIH) Metabolomics platform, the BIH Core Unit Bioinformatics, the INRA Plateforme d'Exploration du Métabolisme, and the INRA Laboratoire d'Etude des Résidus et Contaminants dans les Aliments.
 
-## Operation System Compatibility
-WiPP has been tested successfully with:
-- Ubuntu 16 (Xenial Xerus)
-
-Ubuntu 18 (Bionic Beaver) is not supported yet due to lacking support of incorporated R packages.
-
+This document aims to help you get started with **WiPP** and brings through the minimum requirements to install, set up, and run the software. However, we strongly recommend you to read through the [complete user guide](documentation/USERGUIDE.md)(attach link) for a full and advanced use of **WiPP**.
 
 ## Requirements
 - conda
-- libnetcdf11
+- libnetcdf11 (required by R package CAMERA)
 
 ## Installation
+You can install **WiPP** using the following command:
 ```bash
 git clone https://github.com/bihealth/wipp_dev.git
 cd wipp_dev
 make
 ```
+Now you are ready to run **WiPP**!
+
 
 ## Running of test project
 
@@ -39,22 +35,9 @@ cd ./projects/example_project
 ```bash
 ../../run_WiPP.sh an
 ```
-To use an already trained example classifier, uncomment the following line in the *config.yaml* file:
-```
-# path: example_classifier
-```
-
 4. Call peak picking with n nodes (example: n = 4)
 ```bash
 ../../run_WiPP.sh pp -n 4 
 ```
-## Troubleshooting
-- *there is no package called ‘MSnbase’*
-
-Add the following line **to the top** of the file "envs/R_env.yaml" under the section "dependencies":
-```
-- bioconductor-msnbase=2.4.0=r341h470a237_1
-```
-
 ## Further details
 TODO <YG, 2018.09.06> Update
