@@ -6,10 +6,10 @@
 This document aims to help you get started with **WiPP** and brings through the minimum requirements to install, set up, and run the software. However, we strongly recommend you to read through the [complete user guide](documentation/USERGUIDE.md) for a full and advanced use of **WiPP**.
 
 ## License
-WiPP v 1.0 is release under the [MIT License](LICENSE.md).
+**WiPP** v 1.0 is release under the [MIT License](LICENSE.md).
 
 ## Operating System Compatibility
-WiPP has been tested successfully with:
+**WiPP** has been tested successfully with:
 - Ubuntu 16 (Xenial Xerus)
 
 Ubuntu 18 (Bionic Beaver) is not supported yet due to lacking support of incorporated R packages.
