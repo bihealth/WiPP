@@ -53,9 +53,42 @@ Once you have annotated the required amount of peaks for each algorithm (only 25
 You are now ready to launch the last part of the pipeline. 
 
 ### Do the actual peack picking
-Many sequential substep are in fact happening during this final step of the pipeline such as classifier hyperparameter optimisation, peak detection algorithms paramter optimisation, peak detection on the full dataset, output classification and result integration. Run it with the following command and adjust the number of cores using the inline paramter `-n <CORES>`:
+Many sequential substep are in fact happening during this final step of the pipeline such as classifier hyperparameter optimisation, peak detection algorithms paramter optimisation, peak detection on the full dataset, output classification and result integration. \
+Run it with the following command and adjust the number of cores using the inline paramter `-n <CORES>`:
 ```bash
 ../../run_WiPP.sh pp -n 4 
 ```
 
 ## Running your own project
+To run your own project, you have to do some prelimitary work and decisions, which is described in this section.
+To actually run **WiPP** subsequently, you have to follow the same steps as in the example_project.
+
+### Input files
+Let's create and structure the directory for your data files. **WiPP** supports mzML, mzData and NetCDF file formats.
+
+You can create the `Input_folder` directory anywhere you want as long as it is accessible to the tool. You can also name it the way you want, but for clarity purposes, we will call it `Input_folder` in this tutorial. 
+
+Here is the structure:
+```
+Input_folder/
+	condition_1/
+	condition_2/
+	...
+	condition_n/
+	Training_samples/
+	Optimization_samples/
+	Wash/
+```
+
+All you files should be separated into subdirectories corresponding to the experimental conditions of your study (here, condition 1 to n).
+
+Three extra subdirectories are necessary to run the pipeline.
+
+The `Wash` directory is optional but if present should contain the wash or blank sample files. Here, we assume that these samples contain the alkanes that are used for Retention Index calculation.
+
+The `Training_samples` directory should contain a subset of the pooled samples or a representative subset of the samples of each biological condition. We recommend using a minimum of 2 sample for each condition.
+
+The `Optimization_samples` directory is similar to the `Training_samples` directory, just make sure to choose different samples as we do not want the parameters to be optimized using the same data the classifier was trained on. 
+
+> ### Note
+> If you are wondering if the data files used as training and optimization samples should also be present with the full dataset, the answer is yes! Those files are just present in two copies in different places.
