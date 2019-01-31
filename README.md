@@ -43,13 +43,14 @@ You can adjust the number of cores using the inline paramter `-n <CORES>`:
 ```
 (Note: Running this for the first time takes a while: another conda environment is created)
 
-### Annotation detected peaks
-Run the following command to start the classification:
+### Annotate detected peaks
+Run the following command to start the annotation:
 ```bash
 ../../run_WiPP.sh an
 ```
 The script opens a simple visualization tool using the default pdf viewer, and will wait for you to assign a class to the peak. By default, seven different classes are available for you to choose from.
-Once you have annotated the required amount of peaks for each algorithm (only 25 for the example project), the tool will automatically close. You are now ready to launch the last part of the pipeline. 
+Once you have annotated the required amount of peaks for each algorithm (only 25 for the example project), the tool will automatically close. \
+You are now ready to launch the last part of the pipeline. 
 
 ### Do the actual peack picking
 Many sequential substep are in fact happening during this final step of the pipeline such as classifier hyperparameter optimisation, peak detection algorithms paramter optimisation, peak detection on the full dataset, output classification and result integration. Run it with the following command and adjust the number of cores using the inline paramter `-n <CORES>`:
