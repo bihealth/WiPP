@@ -119,7 +119,7 @@ That's all for the basic settings, you are now ready to run the pipeline.
 > Keep in mind that those parameters are the only one required to run the pipeline, but there is a lot more you can do to precisely tune the pipeline. Have a read through the [complete user guide](documentation/USERGUIDE.md) to learn more.
  
 ### Running the pipeline
-Follow the same steps as in the [example_project](#Running a test project).
+Follow the same steps as in the [example_project](#running-a-test-project).
 
 > ### Note
 > Peak annotation usually takes several hours (1200 peaks per algorithm by default), but you only need to do that once per instrument/protocol. Once trained, the SVM classifiers can be reused on other datasets generated with the same instrument and data acquisition method.
