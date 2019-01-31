@@ -41,7 +41,8 @@ You can adjust the number of cores using the inline paramter `-n <CORES>`:
 ```bash
 ../../run_WiPP.sh tr -n 4 
 ```
-(Note: Running this for the first time takes a while: another conda environment is created)
+> ### Note
+> Running this for the first time takes a while: another conda environment is created
 
 ### Annotate detected peaks
 Run the following command to start the annotation:
@@ -92,3 +93,33 @@ The `Optimization_samples` directory is similar to the `Training_samples` direct
 
 > ### Note
 > If you are wondering if the data files used as training and optimization samples should also be present with the full dataset, the answer is yes! Those files are just present in two copies in different places.
+
+### Pipeline settings
+
+This tutorial only shows the minimum requirements to run the pipeline, to learn more about all pipeline settings, have a look at the pipeline settings section of the [complete user guide](documentation/USERGUIDE.md).
+
+All general pipeline settings are stored in the config.yaml of the individual project folder and need to be created for every new project. You can have alook at the example in the example_project directory that you find here:
+
+```
+WiPP/
+	projects/
+		example_project/
+			config.yaml
+```
+First, you need to define the absolute path to your `Input_folder`. This parameter can be found in the `static_data` block under the name `absolute_path`. You also need to specify the resolution of your data by setting the `high_resolution` parameter to `True` or `False`.
+
+Next, if you have a `Wash` directory for retention index calculation, go to the `retention_index` block. You need to define the relative path from the `Input_folder` to the `wash_folder`. In our example, this parameter would look like this `./Wash`.
+You also have to define the alkanes present in your samples as a simple list `c10,c12,c16,[...],c32,c34`.
+
+The last two compulsory parameters that you need to define are the relatives path from the `Input_folder` to your `Training_samples` and `Optimization_samples` directories, respectively found in `training_data-general` and `optimization-general` setting blocks.
+
+That's all for the basic settings, you are now ready to run the pipeline.
+
+> ### Note
+> Keep in mind that those parameters are the only one required to run the pipeline, but there is a lot more you can do to precisely tune the pipeline. Have a read through the [complete user guide](documentation/USERGUIDE.md) to learn more.
+ 
+### Running the pipeline
+Follow the same steps as in the example_project.
+
+> ### Note
+> Peak annotation usually takes several hours (1200 peaks per algorithm by default), but you only need to do that once per instrument/protocol. Once trained, the SVM classifiers can be reused on other datasets generated with the same instrument and data acquisition method.
