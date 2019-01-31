@@ -37,7 +37,7 @@ config=
 while [ "$1" != "" ]; do
     case $1 in
         -c | --config )         shift
-                                config="--configfile $1"
+                                config="$PWD/$1"
                                 ;;
         -n | --nodes )          shift
                                 cores=$1
