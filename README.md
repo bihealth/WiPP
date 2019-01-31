@@ -22,7 +22,7 @@ Ubuntu 18 (Bionic Beaver) is not supported yet due to lacking support of incorpo
 You can install **WiPP** using the following command:
 ```bash
 git clone https://github.com/bihealth/WiPP.git
-cd wipp_dev
+cd WiPP
 make
 ```
 Now you are ready to run **WiPP**!
