@@ -357,7 +357,7 @@ def _get_files(file_path):
     if not os.path.isdir(file_path):
         return ([], '')
 
-    samples = [i for i in os.listdir(file_path)]
+    samples = [i for i in os.listdir(file_path) if not i.endswith('md')]
     sample_names = list(set([re.sub('\.[a-zA-Z]+$', '', i) for i in samples]))
     try:
         file_type = [i for i in samples if not i.endswith('pkl')][0] \
