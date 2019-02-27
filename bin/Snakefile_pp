@@ -43,7 +43,7 @@ def get_opt_param(alg, par):
 rule all:
     input:
         expand(
-            os.path.join(out_dir, '04_Final_results', '{group}__final.csv'),
+            os.path.join(out_dir, '04_Final_results', '{group}__final.msp'),
             group=sample_data['groups'] + ['all']
         )
 
@@ -490,3 +490,12 @@ rule align_across_groups:
             grp_files, output[0],
             params.tolerance, params.min_samples, params.min_sim, params.RI
         )
+
+
+rule generate_msp:
+    input:
+        os.path.join(out_dir, '04_Final_results', '{group}__final.csv')
+    output:
+        os.path.join(out_dir, '04_Final_results', '{group}__final.msp')
+    run:
+        utils.peaklist_to_msp(input[0], output[0])

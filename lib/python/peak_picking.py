@@ -435,10 +435,6 @@ def merge_detected_peaks(peak_files, out_file, raw_data_dir, f_type, tol,
     for peak_file in peak_files:
         algorithm = utils.split_path(peak_file)[1]
         new_peaks = DetectedXCMSPeaks(peak_file, algorithm, min_pw, min_mz, tol)
-        print(new_peaks.get_data()['class'].isin([1,2,3]).sum())
-        print(new_peaks.get_data()['class'].isin([5,6,7]).sum())
-        print(new_peaks.get_data()['class'].isin([9]).sum())
-        print(new_peaks.get_data().shape)
         try:
             peaks.join(new_peaks, tol)
         except NameError:

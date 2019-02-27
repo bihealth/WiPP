@@ -1,6 +1,6 @@
 #!/bin/bash
 
-WIPP_PATH="`dirname \"$0\"`"
+WIPP_PATH="$(dirname $(realpath -s $0))"
 SNAKEMAKE_EXE="$WIPP_PATH"
 CONFIG_CHECK="$WIPP_PATH"
 CONFIG_CHECK+="/lib/python/utils.py"
@@ -31,16 +31,21 @@ else
 fi
 shift
 
-cores=1
-config=
+SNAKE_CMD="snakemake -s $SNAKEMAKE_EXE --use-conda -k"
 
 while [ "$1" != "" ]; do
     case $1 in
         -c | --config )         shift
-                                config="$PWD/$1"
+                                SNAKE_CMD+=" --configfile "
+                                SNAKE_CMD+="$PWD/$1"
                                 ;;
         -n | --nodes )          shift
-                                cores=$1
+                                SNAKE_CMD+=" --cores "
+                                SNAKE_CMD+=$1
+                                ;;
+        -s | --snake )          shift
+                                SNAKE_CMD+=" "
+                                SNAKE_CMD+=$1
                                 ;;
     esac
     shift
@@ -54,4 +59,5 @@ python3 "$CONFIG_CHECK" -c "$config" -t "$WIPP_MODE"
 # Run workflow
 echo ''
 echo 'Running Snakemake:'
-snakemake -s "$SNAKEMAKE_EXE" --use-conda -k --cores "$cores" --configfile "$config"
+echo "$SNAKE_CMD"
+$SNAKE_CMD

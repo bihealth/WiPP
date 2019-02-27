@@ -9,6 +9,7 @@ import re
 import yaml
 import argparse
 import multiprocessing
+import pandas as pd
 
 
 parser = argparse.ArgumentParser(description='Check configs for completeness.')
@@ -416,6 +417,37 @@ def _get_parameters(config, param_section):
         final_params[alg] = combi_str
 
     return final_params
+
+
+def peaklist_to_msp(in_file, out_file):
+    """ Converts a peak list to a MSP file compatible with NIST DB matching
+
+    Args:
+        in_file (str): Aboslute or relative file path to peak list (tab seperated)
+        out_file (str): Absolute or relative output file
+
+    """
+    peaks = pd.read_csv(in_file, sep='\t', usecols=range(8))
+    out_str = ''
+    for peak_data in peaks.iterrows():
+        out_str += _peak_to_msp(*peak_data)
+        out_str += '\n\n'
+
+    with open(out_file, 'w') as f:
+        f.write(out_str)
+
+
+def _peak_to_msp(idx, peak):
+    out_str = 'Name: {}\n'.format(idx)
+    try:
+        out_str += 'Synon: RI: {}\n'.format(peak['RI']).replace('.', ',')
+    except KeyError:
+        out_str += 'Synon: RT: {}\n'.format(peak['rt']).replace('.', ',')
+    out_str += 'Num Peaks: {}\n'.format(peak['mz'].count(':') + 1)
+    out_str += peak['mz'].replace(',', '\n')
+    return out_str
+
+
 
 
 if __name__ == '__main__':

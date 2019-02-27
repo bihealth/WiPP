@@ -165,6 +165,7 @@ class DetectedPeaks():
                 suffixes=('', '_1')
             )
         out_data = self._sort_and_idx_reset(out_data, ['rt', 'rtmin', 'rtmax'])
+
         out_data.to_csv(out_file, sep='\t', index=False)
 
 
@@ -236,16 +237,15 @@ class DetectedPeaks():
             sample (SampleData): SampleData object corresponding to the peaks. 
 
         """
-
-        self.data['mz_spectrum'] = self._get_data_spectra(self.data, sample)
-        self.data['mz_spectrum_norm'] = self._get_data_spectra_normalized(
+        self.data['mz_raw'] = self._get_data_spectra(self.data, sample)
+        self.data['mz_raw_norm'] = self._get_data_spectra_normalized(
             self.data
         )
         if not self.dropped.empty:
-            self.dropped['mz_spectrum'] = self._get_data_spectra(
+            self.dropped['mz_raw'] = self._get_data_spectra(
                 self.dropped, sample
             )
-            self.dropped['mz_spectrum_norm'] = \
+            self.dropped['mz_raw_norm'] = \
                 self._get_data_spectra_normalized(self.data)
         if not self.concatenated.empty:
             peak_no = len([i for i in self.concatenated.columns if 'class' in i])
@@ -259,14 +259,14 @@ class DetectedPeaks():
                 ]
 
                 self.concatenated.loc[
-                    peak_col_data.index, 'mz_spectrum_{}'.format(idx)
+                    peak_col_data.index, 'mz_raw_{}'.format(idx)
                 ] = self._get_data_spectra(peak_col_data, sample)
 
                 self.concatenated \
-                    .loc[peak_col_data.index, 'mz_spectrum_norm_{}'.format(idx)] \
+                    .loc[peak_col_data.index, 'mz_raw_norm_{}'.format(idx)] \
                         = self._get_data_spectra_normalized(
                             self.concatenated.loc[
-                                peak_col_data.index, 'mz_spectrum_{}'.format(idx)
+                                peak_col_data.index, 'mz_raw_{}'.format(idx)
                             ]
                         )
 
@@ -315,7 +315,7 @@ class DetectedPeaks():
             return out_str.rstrip(',')
 
         if isinstance(data, pd.DataFrame):
-            return data['mz_spectrum'].apply(_normalize_spectra)
+            return data['mz_raw'].apply(_normalize_spectra)
         else:
             return data.apply(_normalize_spectra)
 
@@ -392,7 +392,6 @@ class DetectedPeaks():
         if 'class' in self.data.columns and 'class' in peaks2.get_data().columns:
             self.data, concatenated, dropped = \
                 self._join_classified_data(peaks2, tol)
-            import pdb; pdb.set_trace()
             self.concatenated = self.concatenated.append(concatenated, sort=False)
             self.dropped = self.dropped.append(dropped, sort=False)
         else:

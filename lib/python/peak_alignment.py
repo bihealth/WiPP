@@ -61,9 +61,9 @@ def _calc_RI(data_path, out_file, alkanes_rt, alkanes_name):
 def _get_alkanes(data_path, wash_rt=pd.DataFrame(), wash_rt_tol=10, normalize=False,
             alk_masses=[71, 85, 99], alk_no=9):    
     if normalize:
-        detect_col = 'mz_spectrum_norm'
+        detect_col = 'mz_raw_norm'
     else:
-        detect_col = 'mz_spectrum'
+        detect_col = 'mz_raw'
 
     data = DetectedMergedPeaks(data_path, 'Merged').get_data()
 
@@ -87,7 +87,7 @@ def _get_alkanes(data_path, wash_rt=pd.DataFrame(), wash_rt_tol=10, normalize=Fa
         alkanes_idx = _search_wash_alkanes(
             data, mz_cols, alk_no, wash_rt_tol
         )
-        return data.iloc[alkanes_idx][['rt', 'mz_spectrum_norm']].sort_index()
+        return data.iloc[alkanes_idx][['rt', 'mz_raw_norm']].sort_index()
     else:
         alkanes_rt = _search_sample_alkanes(data, wash_rt, wash_rt_tol, alk_no)
         return sorted([i[0] for i in alkanes_rt])
@@ -129,8 +129,8 @@ def _search_wash_alkanes(data, mass_cols, alk_no, wash_rt_tol):
 
 def _search_sample_alkanes(data, wash_alks, wash_rt_tol, alk_no):
     def _get_sim_score(spec_1, spec_2):
-        spec_1_str = spec_1['mz_spectrum_norm']
-        spec_2_str = spec_2['mz_spectrum_norm']
+        spec_1_str = spec_1['mz_raw_norm']
+        spec_2_str = spec_2['mz_raw_norm']
 
         RT_diff = np.abs(spec_1['rt'] - spec_2['rt'])
         if RT_diff < 1.5:
@@ -188,17 +188,41 @@ class AlignedPeaks():
             self._number_cols.append('RI')
 
 
-    def save_data(self, out_file):
+    def save_data(self, out_file, split_mz=False):
         """ Save aligned data to file system.
 
         Args:
             ut_file (str): Absolute or relative path to the prospective output file.
 
         """
+        if split_mz:
+            self._save_data_split(out_file)
+        else:
+            self._save_data_all(out_file)
+
+
+    def _save_data_all(self, out_file):
         out_data = self.data
-        cols = self._number_cols + ['mz_spectrum']
+        cols = self._number_cols + ['mz_raw']
         cols.extend(sorted([i for i in out_data.columns if not i in cols]))
         out_data[cols].to_csv(out_file, sep='\t', index=False)
+
+
+    def _save_data_split(self, out_file):
+        out_data = self.data
+        cols0 = self._number_cols + ['mz']
+        cols0.extend(sorted(
+            [i for i in out_data.columns if not i in cols0 and not 'mz_raw' in i]
+        ))
+        out_data[cols0].to_csv(out_file, sep='\t', index=False)
+
+        cols1 = self._number_cols + ['mz_raw']
+        cols1.extend(sorted(
+            [i for i in out_data.columns if not i in cols1 and not 'mz' in i]
+        ))
+        out_data[cols1].to_csv(
+            out_file.replace('final.csv', 'final_mz_raw.csv'), sep='\t', index=False
+        )
 
 
     def round_floats(self, no):
@@ -214,16 +238,14 @@ class AlignedPeaks():
     def _get_detected_peak_data(self, peak_obj):
         sample_data = peak_obj.get_data()
         sample_name = peak_obj.get_sample_name()
-        data = sample_data.drop(
-            ['parameters', 'class', 'mz', 'mz_spectrum_norm'],
-            axis=1
-        )
+        data = sample_data.drop(['parameters', 'class', 'mz_raw_norm'], axis=1)
+
         mz_col = '{}__mz'.format(sample_name)
         data[mz_col] = sample_data['mz']
         class_col = '{}__class'.format(sample_name)
         data[class_col] = sample_data['class']
-        mz_spec_col = '{}__mz_spectrum'.format(sample_name)
-        data[mz_spec_col] = sample_data['mz_spectrum']
+        mz_spec_col = '{}__mz_raw'.format(sample_name)
+        data[mz_spec_col] = sample_data['mz_raw']
 
         sample_cols = [mz_col, class_col, mz_spec_col]
         if 'RI' in data.columns:
@@ -248,7 +270,7 @@ class AlignedPeaks():
 
         """
         new_data, new_cols = self._get_detected_peak_data(peak_obj)
-        spectrum_col = [i for i in new_cols if 'mz_spectrum' in i][0]
+        spectrum_col = [i for i in new_cols if 'mz_raw' in i][0]
 
         add_peaks = pd.DataFrame()
         merge_peaks = pd.DataFrame()
@@ -268,22 +290,26 @@ class AlignedPeaks():
                 sims = []
                 for idx_pos in match:
                     sim = _get_similarity(
-                        self.data.loc[idx_pos, 'mz_spectrum'],
-                        peak['mz_spectrum']
+                        self.data.loc[idx_pos, 'mz_raw'],
+                        peak['mz_raw']
                     )
                     sims.append((sim, idx_pos))
                 idx_match = sorted(sims)[0][1]
 
             peak_sim = _get_similarity(
-                self.data.loc[idx_match, 'mz_spectrum'], peak['mz_spectrum']
+                self.data.loc[idx_match, 'mz_raw'], peak['mz_raw']
             )
             if peak_sim >= min_sim:
                 self.data.loc[idx_match, self._number_cols] += \
                     peak[self._number_cols]
                 self.data.loc[idx_match, self._number_cols] /= 2
-                self.data.loc[idx_match, 'mz_spectrum'] = _merge_spectra(
-                    self.data.loc[idx_match, 'mz_spectrum'], peak['mz_spectrum']
+                self.data.loc[idx_match, 'mz_raw'] = _merge_spectra(
+                    self.data.loc[idx_match, 'mz_raw'], peak['mz_raw'], True
                 )
+                self.data.loc[idx_match, 'mz'] = _merge_spectra(
+                    self.data.loc[idx_match, 'mz'], peak['mz'], True
+                )
+
                 to_merge = peak[new_cols]
                 to_merge.name = idx_match
                 merge_peaks = merge_peaks.append(to_merge, sort=False)
@@ -298,7 +324,7 @@ class AlignedPeaks():
                 sims = []
                 for idx_dupl_peak, dupl_peak in grp_data.iterrows():
                     sim = _get_similarity(
-                        self.data.loc[idx_grp, 'mz_spectrum'],
+                        self.data.loc[idx_grp, 'mz_raw'],
                         dupl_peak[spectrum_col]
                     )
                     sims.append((sim, idx_dupl_peak))
@@ -337,7 +363,7 @@ class AlignedPeaks():
         """ Add the mean inter-sample similarity of each peak as a column.
 
         """
-        spec_cols = [i for i in self.data.columns if i.endswith('__mz_spectrum')]
+        spec_cols = [i for i in self.data.columns if i.endswith('__mz_raw')]
 
         def calc_similarity(peak, ref_col):
             ref_spec = peak[ref_col]
@@ -361,17 +387,37 @@ class AlignedPeaks():
 
         # Calculate similarity: mean spec vs. all samples
         sim_col = 'similarity'
-        self.data[sim_col] = self.data[['mz_spectrum'] + spec_cols] \
-            .apply(calc_similarity, axis=1, args=('mz_spectrum',))
+        self.data[sim_col] = self.data[['mz_raw'] + spec_cols] \
+            .apply(calc_similarity, axis=1, args=('mz_raw',))
         self._number_cols.append(sim_col)
 
 
-def _merge_spectra(spec1_str, spec2_str):
-    spec1 = np.array([int(i.split(':')[1]) for i in spec1_str.split(',')])
-    spec2 = np.array([int(i.split(':')[1]) for i in spec2_str.split(',')])
-    mz = [int(i.split(':')[0]) for i in spec2_str.split(',')]
+def _merge_spectra(spec1_str, spec2_str, norm=False):
+    spec1 = _spec_str_to_s(spec1_str, norm)
+    spec2 = _spec_str_to_s(spec2_str, norm)
+    
     spec = (spec1 + spec2) / 2
-    return ','.join(['{}:{:.0f}'.format(j, spec[i]) for i, j in enumerate(mz)])
+    # If a mass is only present in one spectra, keep this intensity!
+    # (instead of its half (treating not found as zero))
+    only_spec1 = set(spec1.index).difference(spec2.index)
+    only_spec2 = set(spec2.index).difference(spec1.index)
+    try:
+        spec[only_spec1] = spec1[only_spec1]
+        spec[only_spec2] = spec2[only_spec2]
+    except:
+        import pdb; pdb.set_trace()
+    return ','.join(['{}:{:.0f}'.format(i, j) for i, j in spec.items()])
+
+
+def _spec_str_to_s(spec_str, norm=False):
+    spec = pd.Series(
+        np.array([int(i.split(':')[1]) for i in spec_str.split(',')]),
+        index=[int(i.split(':')[0]) for i in spec_str.split(',')]
+    )
+    spec = spec.groupby(spec.index).first()
+    if norm:
+        spec = spec / spec.max() * 999
+    return spec
 
 
 def _get_similarity(spec1_str, spec2_str):
@@ -410,7 +456,8 @@ def align_across_samples(res_files, out_file, tol, min_no, min_sim, RI):
     final_df.add_ratio_column(min_no)
 
     final_df.add_similarity_columns()
-    final_df.save_data(out_file)
+
+    final_df.save_data(out_file, split_mz=True)
 
 
 if __name__ == '__main__':
