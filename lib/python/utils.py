@@ -10,6 +10,7 @@ import yaml
 import argparse
 import multiprocessing
 import pandas as pd
+import numpy as np
 
 
 parser = argparse.ArgumentParser(description='Check configs for completeness.')
@@ -438,16 +439,27 @@ def peaklist_to_msp(in_file, out_file):
 
 
 def _peak_to_msp(idx, peak):
-    out_str = 'Name: {}\n'.format(idx)
+    out_str = 'Name: Unknown {}\n'.format(idx)
     try:
-        out_str += 'Synon: RI: {}\n'.format(peak['RI']).replace('.', ',')
-    except KeyError:
-        out_str += 'Synon: RT: {}\n'.format(peak['rt']).replace('.', ',')
-    out_str += 'Num Peaks: {}\n'.format(peak['mz'].count(':') + 1)
-    out_str += peak['mz'].replace(',', '\n')
+        out_str += 'RI: {}\n'.format(peak['RI'])
+    except:
+        pass
+    out_str += 'rt: {}\n'.format(peak['rt'])
+    spec_str, peak_no = _get_spectrum_str(peak['mz'])
+    out_str += 'Num Peaks: {}\n{}'.format(peak_no, spec_str)
     return out_str
 
 
+def _get_spectrum_str(spec):
+    pairs = np.array(
+        [np.array(i.split(':'), dtype=int) for i in spec.split(',')]
+    )
+    pairs[:,1] = pairs[:,1] / pairs[:,1].max() * 999
+    pairs = pairs[pairs[:,1] != 0]
+    return ''.join(
+        ['{} {}; {}'.format(j[0], j[1], '\n' * (i % 5 == 4)) for i, j in \
+            enumerate(pairs)]
+    ), pairs.shape[0]
 
 
 if __name__ == '__main__':
