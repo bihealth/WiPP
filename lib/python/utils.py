@@ -452,13 +452,13 @@ def _peak_to_msp(idx, peak):
 
 def _get_spectrum_str(spec):
     pairs = np.array(
-        [np.array(i.split(':'), dtype=int) for i in spec.split(',')]
+        [np.array(i.split(':'), dtype=float) for i in spec.split(',')]
     )
     pairs[:,1] = pairs[:,1] / pairs[:,1].max() * 999
     pairs = pairs[pairs[:,1] != 0]
     return ''.join(
-        ['{} {}; {}'.format(j[0], j[1], '\n' * (i % 5 == 4)) for i, j in \
-            enumerate(pairs)]
+        ['{:.0f} {:.0f}; {}'.format(j[0], j[1].round(), '\n' * (i % 5 == 4)) \
+            for i, j in enumerate(pairs)]
     ), pairs.shape[0]
 
 

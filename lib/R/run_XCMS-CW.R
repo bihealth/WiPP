@@ -21,6 +21,9 @@ p <- add_argument(p, '--ppm',
   default = 25,
   help = 'mass accuracy tolerance in parts per million (int)'
 )
+p <- add_argument(p, '--param_file', default = '',
+  help = 'path to a csv file containing algorithm parameters.'
+)
 p <- add_argument(p, '--config',
   default = '../../pp_configs/XCMS-CW_default.INI',
   help = 'config dir path (default: config/XCMS-CW_default.INI)'
@@ -43,6 +46,21 @@ source('../../lib/R/ConfigParser.R')
 #-------------------------------------------------------------------------------
 config <- ConfigParser$new()
 config$read(argv$config)
+
+if (argv$param_file != '') {
+  params <- read.table(argv$param_file)
+  for (row in 1:dim(params)[1]) {
+    if (params[[1]][[row]] == 'par0') {
+      argv$peakwidth[1] <- params[[2]][[row]]
+    } else if (params[[1]][[row]] == 'par1') {
+      argv$peakwidth[2] <- params[[2]][[row]]
+    } else if (params[[1]][[row]] == 'par2') {
+      argv$mzdiff <- params[[2]][[row]]
+    } else if (params[[1]][[row]] == 'par3') {
+      argv$ppm <- params[[2]][[row]]
+    }
+  }
+}
 
 #-------------------------------------------------------------------------------
 # DATA IMPORT/EXPORT STRUCTURE

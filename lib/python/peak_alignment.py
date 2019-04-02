@@ -411,9 +411,10 @@ def _merge_spectra(spec1_str, spec2_str, norm=False):
 
 def _spec_str_to_s(spec_str, norm=False):
     spec = pd.Series(
-        np.array([int(i.split(':')[1]) for i in spec_str.split(',')]),
-        index=[int(i.split(':')[0]) for i in spec_str.split(',')]
+        np.array([int(float(i.split(':')[1])) for i in spec_str.split(',')]),
+        index=[int(float(i.split(':')[0])) for i in spec_str.split(',')]
     )
+
     spec = spec.groupby(spec.index).first()
     if norm:
         spec = spec / spec.max() * 999
