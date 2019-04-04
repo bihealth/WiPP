@@ -27,6 +27,9 @@ make
 ```
 Now you are ready to run **WiPP**!
 
+> ### Note
+> If you installed conda newly, remember to `source ~/.bashrc` or open a new terminal.
+
 ## Running a test project
 
 ### Change into example_project directory
