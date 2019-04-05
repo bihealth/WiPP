@@ -5,7 +5,7 @@ channels:
   - cran
   - defaults
 dependencies:
-  - snakemake-minimal=5.3.1
+  - snakemake-minimal=5.4.3
   - appdirs=1.4.3
   - asn1crypto=0.24.0
   - attrs=18.2.0
@@ -64,5 +64,4 @@ dependencies:
     - scikit-learn==0.20.1
     - scipy==1.1.0
     - sklearn==0.0
-    - snakemake==5.3.1
     - pytools==2018.5.2
