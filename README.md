@@ -18,6 +18,9 @@ Ubuntu 18 (Bionic Beaver) is not supported yet due to lacking support of incorpo
 - conda ([Bioconda website - Python 3.x](https://conda.io/en/latest/miniconda.html))
 - libnetcdf11 ([Ubuntu packages website](https://packages.ubuntu.com/xenial/libs/libnetcdf11))
 
+> ### Note
+> If you installed conda newly, remember to `source ~/.bashrc` or open a new terminal.
+
 ## Installation
 You can install **WiPP** using the following command:
 ```bash
@@ -26,9 +29,6 @@ cd WiPP
 make
 ```
 Now you are ready to run **WiPP**!
-
-> ### Note
-> If you installed conda newly, remember to `source ~/.bashrc` or open a new terminal.
 
 ## Running a test project
 
