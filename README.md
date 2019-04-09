@@ -1,4 +1,4 @@
-# WiPP - A **W**orkflow for **i**mproved **P**eak **P**ickng
+# WiPP - A **W**orkflow for **i**mproved **P**eak **P**icking
 **WiPP** is an open source large scale GC-MS data preprocessing workflow built in Python 3 that uses machine learning to optimise, automate and combine the peak detection process of commonly used peak picking algorithms.
 
 **WiPP** has been developed as a collaborative effort between the Berlin Institute of Health (BIH) Metabolomics platform, the BIH Core Unit Bioinformatics, the INRA Plateforme d'Exploration du Métabolisme, and the INRA Laboratoire d'Etude des Résidus et Contaminants dans les Aliments.
