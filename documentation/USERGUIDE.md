@@ -183,11 +183,45 @@ The `absolute_path` parameter should point to your input data folder where your 
 
 `peak_min_mz` represents the minimum number of m/z to be detected within the same time window to be considered a peak. The default value is `3`.
 
-Finally, the `merging_RT_tol` parameter is the time tolerance given in second for peaks detected in the same sample with different parameters/algorithms to be considered the same and reported as one. The default value is `0.2`.
+***
+
+The `algorithms` block gives you the opportunity to define the peak picking algorithms you want to use. Currently, two algorithms are available (XCMS CentWave and MatchedFilter), and you can choose to use either or both of them by setting them to `True` or `False`.
 
 ***
 
-The second parameter block is dedicated to retention index, if you do not use alkanes, you can remove or skip this section altogether as the default value is `False`.
+The `default_config` parameters block allows you to set the path where the default algorithm parameters are stored. Unless you are making your own changes to the tool, you can leave this section as it is.
+
+***
+
+Finally, the `RT_tol` parameter in the `merging` parameter block is the time tolerance given in second for peaks detected in the same sample with different parameters/algorithms to be considered the same and reported as one. The default value is `0.2`.
+
+***
+
+#### Training data parameters
+
+The `training_data-general` block allows you to define the location of your `training_samples` as a relative path from your `Input_folder` directory.
+The second parameter is the number of `plots_per_samples` to be generated, these plots will then be used for manual annotation and generation of the training dataset. The default value is `200`.
+
+Within the `training_data-params` parameter block, you can specify the algorithm parameters you would like to use to generate your training data by defining a list for every entry. The possible combinations will be automatically evaluated by **WiPP** and used to generate the training dataset. The default values give a wide range of parameter sets and should fit most data.
+
+> ### Note
+> The more parameters you set, the longer it will take to run! Consult your MS expert to make an informed decision on the best parameter range to run.
+
+***
+
+#### Optimization parameters
+
+In the `classifier` block, set `SVM` and `RF` (support vector machines and Random forests) to `True` or `False` depending on the model you want to use. If both are set to `True`, only the best performing estimator will be conserved. `SVM` have shown better performance on all datasets tested so far. The `validation_set_size` and `cross_validation_splits` parameters, respectively set to `0.2` and `3` by default are used for hyperparameter optimization and to prevent overfitting. We recommend using the default values if you are not familiar with cross-validation procedure to evaluate estimator performance.
+
+The `optimization-general` block allows you to define the location of your `optimization_samples ` as a relative path from your `Input_folder` directory.
+
+The `optimization-score` is a list of parameters used to find the optimal peak picking algorithm parameter set. Default parameters have shown to give appropriate results for both high and low-resolution data, but you can change them according to your needs.
+
+Finally, the last settings, `grid_search-params` concern the grid search range for the parameter optimization. Same as the training data, you can limit the range if you already familiar with the data produced by your GCMS experiment.
+
+***
+
+The following parameter block is dedicated to retention index, if you do not use alkanes, you can remove or skip this section altogether as the default value is `False`.
 
 * retention_index
 	* wash
@@ -199,39 +233,7 @@ The `alkanes` parameter is the list of alkanes that should be used for retention
 
 ***
 
-The `algorithms` block gives you the opportunity to define the peak picking algorithms you want to use. Currently, two algorithms are available (XCMS CentWave and MatchedFilter), and you can choose to use either or both of them by setting them to `True` or `False`.
-
-***
-
-The `default_config` parameters block allows you to set the path where the default algorithm parameters are stored. Unless you are making your own changes to the tool, you can leave this section as it is.
-
-***
-
-**Add alignment parameters here but not sure what to write**
-
-***
-
-#### Training data parameters
-
-The `training_data-general` block allows you to define the location of your `training_samples` as a relative path from your `Input_folder` directory.
-The second parameter is the number `plots_per_samples` to be generated, these plots will then be used for manual annotation and generation of the training dataset. The default value is `200`. 
-
-Within the `training_data-params` parameter block, you can specify the algorithm parameters you would like to use to generate your training data by defining a list for every entry. The possible combinations will be automatically evaluated by the **WiPP** and used to generate the training dataset. The default values give a wide range of parameter sets and should fit most data.
-
-> ### Note
-> The more parameters you set, the longer it will take to run! Consult your MS expert to make an informed decision on the best parameter range to run.
-
-***
-
-#### Optimization parameters
-
-Set `SVM` and `RF` (support vector machines and Random forests) to `True` or `False` depending on the model you want to use. If both are set to `True`, only the best performing estimator will be conserved. `SVM` have shown better performance on all datasets tested so far. The `validation_set_size` and `cross_validation_splits` parameters, respectively set to `0.2` and `3` by default are used for hyperparameter optimization and to prevent overfitting. We recommend using the default values if you are not familiar with cross-validation procedure to evaluate estimator performance.
-
-The `optimization-general` block allows you to define the location of your `optimization_samples ` as a relative path from your `Input_folder` directory.
-
-The `optimization-score` is a list of parameters used to find the optimal peak picking algorithm parameter set. Default parameters have shown to give appropriate results for both high and low-resolution data, but you can change them according to your needs. 
-
-Finally, the last settings, `grid_search-params` concern the grid search range for the parameter optimization. Same as the training data, you can limit the range if you already familiar with the data produced by you GCMS experiment.  
+Finally, the `alignment` block allows you to define the parameters for cross sample alignment. The appropriate parameter of`RI_tol` or `RT_tol` will be used depending on your project. `RT_tol` should be defined in seconds. The `min_similarity` parameter corresponds to the minimum spectra simialrity for peaks to be aligned, and the `min_samples` parameter defines the minimum number of samples (as a ratio) for a peak to be present in order to be reported.
 
 ## Running the pipeline
 
@@ -254,7 +256,7 @@ This step can take some time depending on the number of cores you have allocated
 
 ### Training data annotation (Step 2)
 
-You now need to annotate manually a series of peaks which will then be used to train the SVM classifiers and subsequently optimise the peak picking algoritm paramters to best fit your data. This task usually take several hours, but you only need to do that once per instrument/protocol. Once trained, the SVM classifiers can be reused on other datasets generated with the same instrument and data acquisition method.
+You now need to annotate manually a series of peaks which will then be used to train the SVM classifiers and subsequently optimise the peak picking algoritm parameters to best fit your data. This task usually take several hours, but you only need to do that once per instrument/protocol. Once trained, the SVM classifiers can be reused on other datasets generated with the same instrument and data acquisition method.
 
 To start the classification run the following command, you can add the flag `--help` to learn more:
 
@@ -262,8 +264,11 @@ To start the classification run the following command, you can add the flag `--h
 ../../run_WiPP.sh an
 ```
 
-The script opens a simple visualization tool using the default pdf user, and will wait for to assign a class to the peak. Seven different classes are available for you to choose from.
-Once you have annotated the required amount of peaks for each algorithm (1200 by default), the tool will automatically close. You are now ready to launch the last part of the pipeline. 
+The script opens a simple visualization tool using the default pdf viewer, and will wait for to assign a class to the peak. Seven different classes are available for you to choose from.
+Once you have annotated the required amount of peaks for each algorithm (1200 by default), the tool will automatically close. You are now ready to launch the last part of the pipeline.
+
+> ### Note
+> The default parameters are only taken if they are not defined in the `config.yaml` file. Chances are that you used example config file that we provided as a template, make sure to adapt the parameters properly. For instance, the number of peaks to annotated is set to 25 per sample in the example file, make sure to change this parameter before running this step.
 
 ### Optimisation and high confidence peak set generation (Step 3)
 
