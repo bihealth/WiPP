@@ -99,7 +99,7 @@ The `Training_samples` directory should contain a subset of the pooled samples o
 The `Optimization_samples` directory is similar to the `Training_samples` directory, just make sure to choose different samples as we do not want the parameters to be optimized using the same data the classifier was trained on. 
 
 > ### Note
-> If you are wondering if the data files used as training and optimization samples should also be present with the full dataset, the answer is yes! Those files are just present in two copies in different places.
+> The sample files used for training and optimization should still be present in your sample directories, the files in the `Training_samples` and `Optimization_samples` directories are only copies.
 
 ### Pipeline settings
 
