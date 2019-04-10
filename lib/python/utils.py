@@ -9,6 +9,8 @@ import re
 import yaml
 import argparse
 import multiprocessing
+import pandas as pd
+import numpy as np
 
 
 parser = argparse.ArgumentParser(description='Check configs for completeness.')
@@ -357,7 +359,7 @@ def _get_files(file_path):
     if not os.path.isdir(file_path):
         return ([], '')
 
-    samples = [i for i in os.listdir(file_path)]
+    samples = [i for i in os.listdir(file_path) if not i.endswith('md')]
     sample_names = list(set([re.sub('\.[a-zA-Z]+$', '', i) for i in samples]))
     try:
         file_type = [i for i in samples if not i.endswith('pkl')][0] \
@@ -416,6 +418,48 @@ def _get_parameters(config, param_section):
         final_params[alg] = combi_str
 
     return final_params
+
+
+def peaklist_to_msp(in_file, out_file):
+    """ Converts a peak list to a MSP file compatible with NIST DB matching
+
+    Args:
+        in_file (str): Aboslute or relative file path to peak list (tab seperated)
+        out_file (str): Absolute or relative output file
+
+    """
+    peaks = pd.read_csv(in_file, sep='\t', usecols=range(8))
+    out_str = ''
+    for peak_data in peaks.iterrows():
+        out_str += _peak_to_msp(*peak_data)
+        out_str += '\n\n'
+
+    with open(out_file, 'w') as f:
+        f.write(out_str)
+
+
+def _peak_to_msp(idx, peak):
+    out_str = 'Name: Unknown {}\n'.format(idx)
+    try:
+        out_str += 'RI: {}\n'.format(peak['RI'])
+    except:
+        pass
+    out_str += 'rt: {}\n'.format(peak['rt'])
+    spec_str, peak_no = _get_spectrum_str(peak['mz'])
+    out_str += 'Num Peaks: {}\n{}'.format(peak_no, spec_str)
+    return out_str
+
+
+def _get_spectrum_str(spec):
+    pairs = np.array(
+        [np.array(i.split(':'), dtype=float) for i in spec.split(',')]
+    )
+    pairs[:,1] = pairs[:,1] / pairs[:,1].max() * 999
+    pairs = pairs[pairs[:,1] != 0]
+    return ''.join(
+        ['{:.0f} {:.0f}; {}'.format(j[0], j[1].round(), '\n' * (i % 5 == 4)) \
+            for i, j in enumerate(pairs)]
+    ), pairs.shape[0]
 
 
 if __name__ == '__main__':

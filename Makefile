@@ -7,4 +7,5 @@ create:
 	@echo
 
 clean :
-	conda remove --name WiPP --all
+	conda remove --name WiPP --all 
+	find ./projects/example_project/data/ -type f ! -name 'README.md' -exec rm -f {} +
