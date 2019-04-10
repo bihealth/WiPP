@@ -305,6 +305,7 @@ class AlignedPeaks():
                 self.data.loc[idx_match, self._number_cols] /= 2
                 self.data.loc[idx_match, 'mz_raw'] = _merge_spectra(
                     self.data.loc[idx_match, 'mz_raw'], peak['mz_raw']
+
                 )
                 self.data.loc[idx_match, 'mz'] = _merge_spectra(
                     self.data.loc[idx_match, 'mz'], peak['mz']

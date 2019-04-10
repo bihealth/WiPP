@@ -26,24 +26,16 @@ configfile: 'config.yaml'
 # proof check config data and get relevant data
 algorithms, sample_data, opt_data, wash_file = \
     utils.evaluate_peakpicking_config(config)
-opt_params = PersistentDict('parameters')
 groupCorr_str = '' if not config['XCMS_params']['groupCorr'] else '--groupCorr'
 out_dir = config['static_data'].get('output_dir', '')
 if out_dir == '.':
     out_dir = ''
 
 
-def get_opt_param(alg, par):
-    try:
-        return opt_params.fetch('{}__{}'.format(alg, par))
-    except:
-        return ''
-
-
 rule all:
     input:
         expand(
-            os.path.join(out_dir, '04_Final_results', '{group}__final.csv'),
+            os.path.join(out_dir, '04_Final_results', '{group}__final.msp'),
             group=sample_data['groups'] + ['all']
         )
 
@@ -122,8 +114,7 @@ rule run_grid_search_XCMS_CW:
             ) if config['static_data'].get('high_resolution', False) else ''
     shell:
         'Rscript {params.R_dir}/run_XCMS-CW.R {input} {output} '
-        '--peakwidth {params.pwMin} {params.pwMax} '
-        '{params.mzdiff} {params.ppm} '
+        '--peakwidth {params.pwMin} {params.pwMax} {params.mzdiff} {params.ppm} '
         '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
         
 
@@ -178,8 +169,6 @@ rule evaluate_grid_search_XCMS_CW:
             input, output[0], 
             params.raw_data, params.f_type, config['optimization-score']
         )
-        for key, val in params.items():
-            opt_params.store('CW__{}'.format(key), val)
 
 
 rule run_XCMS_CW_all:
@@ -201,15 +190,11 @@ rule run_XCMS_CW_all:
         raw_data_file = lambda wildcards: os.path.join(
             config['static_data']['data_path'],
             '{}.{}'.format(wildcards.XCMS_all_file, sample_data['type'])
-        ),
-        pwMin = get_opt_param('CW', 'par0'),
-        pwMax = get_opt_param('CW', 'par1'),
-        mzdiff = get_opt_param('CW', 'par2'),
-        ppm = get_opt_param('CW', 'par3')
+        )
     shell:
         'Rscript {params.R_dir}/run_XCMS-CW.R {params.raw_data_file} {output} '
-        '--peakwidth {params.pwMin} {params.pwMax} {params.mzdiff} {params.ppm} '
-        '--cores {params.cores} {params.groupCorr} --utils {params.utils}'
+        '--param_file {input} --cores {params.cores} {params.groupCorr} '
+        '--utils {params.utils}'
         
 
 rule classify_XCMS_CW:
@@ -330,8 +315,6 @@ rule evaluate_grid_search_XCMS_MF:
             input, output[0], 
             params.raw_data, params.f_type, config['optimization-score']
         )
-        for key, val in params.items():
-            opt_params.store('MF__{}'.format(key), val)
 
 
 rule run_XCMS_MF_all:
@@ -353,16 +336,10 @@ rule run_XCMS_MF_all:
         raw_data_file = lambda wildcards: os.path.join(
             config['static_data']['data_path'],
             '{}.{}'.format(wildcards.XCMS_all_file, sample_data['type'])
-        ),
-        fwhm = get_opt_param('MF', 'par0'),
-        sn = get_opt_param('MF', 'par1'),
-        mzdiff = get_opt_param('MF', 'par2'),
-        step = get_opt_param('MF', 'par3'),
-        steps = get_opt_param('MF', 'par4')
+        )
     shell:
         'Rscript {params.R_dir}/run_XCMS-MF.R {params.raw_data_file} {output} '
-        '--fwhm {params.fwhm} --sn {params.sn} {params.mzdiff} {params.step} '
-        '{params.steps} --cores {params.cores} {params.groupCorr} '
+        '--param_file {input} --cores {params.cores} {params.groupCorr} '
         '--utils {params.utils}'
         
 
@@ -490,3 +467,12 @@ rule align_across_groups:
             grp_files, output[0],
             params.tolerance, params.min_samples, params.min_sim, params.RI
         )
+
+
+rule generate_msp:
+    input:
+        os.path.join(out_dir, '04_Final_results', '{group}__final.csv')
+    output:
+        os.path.join(out_dir, '04_Final_results', '{group}__final.msp')
+    run:
+        utils.peaklist_to_msp(input[0], output[0])
