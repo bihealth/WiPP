@@ -1,4 +1,4 @@
 This folder should contain the following two samples after installation:
 
-- sample1.cdf
-- sample6.cdf
+- sample2.cdf
+- sample5.cdf
