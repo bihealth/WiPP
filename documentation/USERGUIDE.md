@@ -69,7 +69,8 @@ If you want to use your own data but do not have it in one of the supported form
 
 ### <a name="Install"></a> Install
 
-####Dependencies
+#### Dependencies
+
 Have you already install **WiPP** on your computer or HPC? Go to the [next section](#Pipeline-architecture) to learn about the architecture of the tool.
 
 **WiPP** uses Bioconda. So first, you will need to install conda following the instruction on the **[Bioconda website](https://conda.io/en/latest/miniconda.html)**.
@@ -79,7 +80,7 @@ You also need to install libnetcdf11 ([Ubuntu packages website](https://packages
 > ### Note
 > If you install conda from scratch, remember to `source ~/.bashrc` or open a new terminal before installing WiPP.
 
-####Installation
+#### Installation
 
 Once Bioconda is enabled, you can install **WiPP** using this command:
 
