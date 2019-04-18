@@ -12,7 +12,7 @@ testdata:
 	wget https://file-public.bihealth.org/transient/wipp/WiPP_files.tar.gz.md5 --no-check-certificate
 	@echo 'Comparing MD5 checksum:'
 	md5sum -c WiPP_files.tar.gz.md5
-	rm -r WiPP_files.tar.gz.md5
+	rm WiPP_files.tar.gz.md5
 	tar -xvzf WiPP_files.tar.gz
 	@echo 'copying training samples:'
 	cp WiPP_files/sample1.cdf ./projects/example_project/data/training_samples
