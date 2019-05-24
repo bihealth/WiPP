@@ -693,10 +693,9 @@ class DetectedPeaks():
             proc_peak = sample \
                 .get_processed_peak(peak[['rtmin', 'rtmax']], rt_dim)
             if proc_peak.size !=  clf.shape_fit_[1]:
-                proc_peak = np.pad(
-                    proc_peak, (clf.shape_fit_[1] - proc_peak.size) // 2,
-                    'constant'
-                )
+                pad_size = (clf.shape_fit_[1] - proc_peak.size) // 2
+                pad_size_r = pad_size + (clf.shape_fit_[1] - proc_peak.size) % 2
+                proc_peak = np.pad(proc_peak, (pad_size, pad_size_r), 'constant')
             to_classify.append(proc_peak)
 
         self.data['class'] = clf.predict(to_classify)
