@@ -89,8 +89,13 @@ class SampleData():
             all_measured = (self.mz == mz_sorted).all()
         except AttributeError:
             all_measured = (self.mz == mz_sorted)
-        if all_measured:
+        intensity = data_cdf.variables['intensity_values']
+        if (all_measured) and (len(intensity) / len(self.mz) == len(self.rt)):
             intensity = data_cdf.variables['intensity_values']
+            print(len(intensity) / len(self.mz))
+            print(len(intensity))
+            print(len(self.mz))
+            print(len(self.rt))
             if len(intensity) / len(self.mz) != len(self.rt):
                 raise RuntimeError('Dimension Error: .CDF data is corrupted.')
             self.data_raw = np.column_stack(np.split(intensity, len(self.rt)))
