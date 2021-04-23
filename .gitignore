@@ -4,3 +4,4 @@ projects/*
 .snakemake
 */__pycache__/
 *.pyc
+logs/

@@ -5,8 +5,20 @@ SNAKEMAKE_EXE="$WIPP_PATH"
 CONFIG_CHECK="$WIPP_PATH"
 CONFIG_CHECK+="/lib/python/utils.py"
 
-# start the right environment
-source activate WiPP
+# Note: The logic for activating conda ASSUMES the oldest possible version being used is 4.3.X
+
+# Activate the conda environment
+if [[ "$(conda --version)" =~ "conda 4.3." ]]
+then
+    echo 'Activating WiPP env (for conda version 4.3)'
+    source activate WiPP
+else
+    # Need to first initialize conda
+    eval "$(conda shell.bash hook)"
+    echo 'Activating WiPP conda env'
+    conda activate WiPP
+fi
+
 # Set environment variable(s)
 export WIPP_PATH="$WIPP_PATH"
 

@@ -10,6 +10,7 @@ import os
 import pickle
 import math
 import matplotlib
+matplotlib.use('Agg') # need this to run in a terminal without X11 forwarding
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
