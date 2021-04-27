@@ -1,7 +1,10 @@
 projects/*
 !projects/example_project/config.yaml
 !projects/example_project/data/*
-!projects/installation_test/*
+!projects/example_project/example_classifier/*
+!projects/installation_test/config.yaml
+!projects/installation_test/data/*
+!projects/installation_test/example_classifier
 .snakemake
 */__pycache__/
 *.pyc
