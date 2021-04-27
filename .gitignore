@@ -1,6 +1,7 @@
 projects/*
 !projects/example_project/config.yaml
 !projects/example_project/data/*
+!projects/installation_test/*
 .snakemake
 */__pycache__/
 *.pyc
