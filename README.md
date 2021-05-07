@@ -9,20 +9,79 @@ This document aims to help you get started with **WiPP** and brings you through 
 **WiPP** v 1.0 is release under the [MIT License](LICENSE.md).
 
 ## Operating System Compatibility
-**WiPP** has been tested successfully with:
-- Ubuntu 16 (Xenial Xerus)
-- CentOS 7.6.1810 (Core)
-
-Ubuntu 18 (Bionic Beaver) is not supported yet due to lacking support of incorporated R packages.
+**WiPP** has been tested successfully on:
+- CentOS 7
+- Ubuntu 20
+- Ubuntu 16
 
 ## Requirements
-- conda ([Bioconda website - Python 3.x](https://conda.io/en/latest/miniconda.html))
+- conda version >= 4.3.34 ([Bioconda website - Python 3.x](https://conda.io/en/latest/miniconda.html))
 - libnetcdf11 ([Ubuntu packages website](https://packages.ubuntu.com/xenial/libs/libnetcdf11))
 
-> ### Note
-> If you install conda from scratch, remember to `source ~/.bashrc` or open a new terminal before installing WiPP.
-
 ## Installation
+
+### Installing miniconda
+*(This section can be skipped if you already have conda installed)*
+
+In a linux terminal, get the python version currently in use on your system. e.g.  
+```
++-> python --version
+Python 3.7.1
+```
+
+In a browser, open: `https://docs.conda.io/en/latest/miniconda.html#linux-installers`  
+and right-click on the "Miniconda3 Linux 64-bit" link correspondig to your python version, and select "Copy link address".
+
+In your linux terminal, go to your tmp directory, type `wget ` and paste the miniconda URL from your clipboard, and then hit enter to initiate 
+downloading the miniconda installer. e.g.
+
+```
++-> cd ~/scratch/tmp
++-> wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86.sh
+--2021-05-06 17:27:49--  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86.sh
+Resolving repo.anaconda.com (repo.anaconda.com)... 104.16.130.3, 104.16.131.3, 2606:4700::6810:8303, ...
+Connecting to repo.anaconda.com (repo.anaconda.com)|104.16.130.3|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 65741329 (63M) [application/x-sh]
+Saving to: ‘Miniconda3-latest-Linux-x86.sh’
+
+100%[========================================================================================>] 65,741,329  60.3MB/s   in 1.0s
+
+2021-05-06 17:27:50 (60.3 MB/s) - ‘Miniconda3-latest-Linux-x86.sh’ saved [65741329/65741329]
++-> 
+```
+
+You now need to create a new text file, we'll call it `miniconda_hash.txt`, where:
+* the first value is the `SHA256 hash` copied from the minconda installers page in your browser
+* the separator is **2 spaces**
+* the second value is the name of the `*.sh`miniconda installer file you just downloaded
+
+e.g. `f387eded3fa4ddc3104b7775e62d59065b30205c2758a8b86b4c27144adafcc4  Miniconda3-latest-Linux-x86.sh`
+
+Now run `sha256sum` using the above file to confirm your download was successful. e.g.  
+```
++-> sha256sum -c miniconda_hash.txt
+Miniconda3-latest-Linux-x86.sh: OK
+```
+
+Now initiate the miniconda installation by running the installer, e.g. 
+```
++-> bash Miniconda3-latest-Linux-x86.sh
+```
+and follow the prompts on the installer screens.
+
+(note: If you are unsure about any setting, accept the defaults. You can change them later.)
+
+Finally, you must initialize miniconda in your terminal by running:
+```
++-> source ~/.bashrc
+```
+
+To test your miniconda installation, run the command `conda list` in your terminal.
+A list of installed packages will appear if it has been installed correctly.
+
+### Installing WiPP
+
 You can install **WiPP** using the following command:
 ```bash
 git clone https://github.com/bihealth/WiPP.git
@@ -30,6 +89,37 @@ cd WiPP
 make
 ```
 Now you are ready to run **WiPP**!
+
+## Running the WiPP installation test
+
+After downloading & installing WiPP, you can use the installation test project to confirm your installation of WiPP runs as expected.
+
+First, go to the project directory:
+`cd WiPP/projects/installation_test`
+
+Now run WiPP peak picking using the following command, adjusting the number of cores using the inline parameter -n as appropriate.
+
+`../../run_WiPP.sh pp -n 1`
+
+Note: Using a single core, the run should complete in slightly over 1 hour and use 6G of memory.
+
+When the peak picking run is done, first check whether the system out logging messages end with the following lines, confirming the job 
+successfully completed all steps:
+```
+Finished job 0.
+48 of 48 steps (100%) done
+Complete log: <$path to snakemake log file>
+```
+
+And finally, run the following commands to identify any differences between your output and the expected results:
+```
+diff 04_Final_results/all__final.csv expected_output/all__final.csv
+diff 04_Final_results/all__final.msp expected_output/all__final.msp
+diff 04_Final_results/Liver__final.csv expected_output/Liver__final.csv
+diff 04_Final_results/Liver__final.msp expected_output/Liver__final.msp
+```
+
+If your installation ran as expected, all 4 `diff` commands should return nothing (0 lines).
 
 ## Running a test project
 
