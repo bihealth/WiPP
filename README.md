@@ -220,3 +220,12 @@ Follow the same steps as in the [example_project](#running-a-test-project).
 > ### Note
 > Peak annotation usually takes several hours (1200 peaks per algorithm by default), but you only need to do that once per instrument/protocol. Once trained, the SVM classifiers can be reused on other datasets generated with the same instrument and data acquisition method.
 
+### Results
+
+All result files are created in a new subfolder named 04_Final_results. 
+
+Two types of results are available, first a csv file (wide format) contains the feature table, every row represent a peak and each column a specific information such as the retention time, retention index or the spectrum (peak mz:peak area) for a specific sample. Missing peaks are represented by missing values in the corresponding sample column.
+
+The second output is a .msp file which contains the spectra of every peak reported in the .csv file and can be used for identification purposes (Using a dedicated GC-MS peak identification tool).
+
+A .csv/.msp pair is available for every biological condition as well as all samples together.
