@@ -280,6 +280,16 @@ Run it with the following command and adjust the number of cores using the inlin
 ../../run_WiPP.sh pp -n 4 
 ```
 
+## Results
+
+All result files are created in a new subfolder named 04_Final_results. 
+
+Two types of results are available, first a csv file (wide format) contains the feature table, every row represent a peak and each column a specific information such as the retention time, retention index or the spectrum (peak mz:peak area) for a specific sample. Missing peaks are represented by missing values in the corresponding sample column.
+
+The second output is a .msp file which contains the spectra of every peak reported in the .csv file and can be used for identification purposes (Using a dedicated GC-MS peak identification tool).
+
+A .csv/.msp pair is available for every biological condition as well as all samples together.
+
 ## Run **WiPP** on an HPC
 
 This section is dedicated to advanced users who wish to set up **WiPP** on a computing cluster for routine use. We strongly encourage you to consult your system administrator to assist you in this task.
