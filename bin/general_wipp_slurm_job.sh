@@ -1,13 +1,8 @@
 #!/bin/bash
 
-# note: sbatch params --cpus-per-task and --job-name are set by the calling script
+# NOTE: the calling script sets sbatch params:  --cpus-per-task --mem-per-cpu --job-name
 
-# #SBATCH --partition=medium
-# #SBATCH --time=24:00:00  #max is 6-23:59:00
-
-#SBATCH --partition=short
 #SBATCH --time=4:00:00
-#SBATCH --mem-per-cpu=6G
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --output=slurm_log/%x-%J.log

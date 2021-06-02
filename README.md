@@ -15,13 +15,13 @@ This document aims to help you get started with **WiPP** and brings you through 
 - Ubuntu 16
 
 ## Requirements
-- conda version >= 4.3.34 ([Bioconda website - Python 3.x](https://conda.io/en/latest/miniconda.html))
+- conda version 4.3.34 - 4.9.2 ([Managing Conda](#managing-conda))
 - libnetcdf11 ([Ubuntu packages website](https://packages.ubuntu.com/xenial/libs/libnetcdf11))
 
 ## Installation
 
 ### Installing miniconda
-*(This section can be skipped if you already have conda installed)*
+*(This section can be skipped if you already have the correct version of conda installed)*
 
 In a linux terminal, get the python version currently in use on your system. e.g.  
 ```
@@ -45,7 +45,7 @@ HTTP request sent, awaiting response... 200 OK
 Length: 65741329 (63M) [application/x-sh]
 Saving to: ‘Miniconda3-latest-Linux-x86.sh’
 
-100%[========================================================================================>] 65,741,329  60.3MB/s   in 1.0s
+100%[============================================================>] 65,741,329  60.3MB/s   in 1.0s
 
 2021-05-06 17:27:50 (60.3 MB/s) - ‘Miniconda3-latest-Linux-x86.sh’ saved [65741329/65741329]
 +-> 
@@ -72,13 +72,35 @@ and follow the prompts on the installer screens.
 
 (note: If you are unsure about any setting, accept the defaults. You can change them later.)
 
-Finally, you must initialize miniconda in your terminal by running:
+Once the installation is complete, all newly created terminals will automatically initialize miniconda.
+
+To initialize miniconda in any terminals that are already open, run:
 ```
 +-> source ~/.bashrc
 ```
 
 To test your miniconda installation, run the command `conda list` in your terminal.
 A list of installed packages will appear if it has been installed correctly.
+
+*Now continue on to the last step to downgrade to a conda version supported by WiPP.*
+
+<a name="managing-conda"></a>
+#### Changing your conda version
+
+WiPP supports conda versions 4.3-4.9, although version 4.9.2 is preferred.
+Conda versions < 4.4 are not supported for external analysis (i.e. running on the cluster)
+
+You can check the version of conda you have currently installed, by running `conda --version`  
+e.g.  
+
+```
++-> conda --version
+conda 4.10.1
+```
+
+To change your conda to version 4.9.2, run `conda install conda=4.9.2`
+and press `enter` (or `y`) when asked if you want to proceed to install & upgrade/downgrade the listed packages.
+
 
 ### Installing WiPP
 
