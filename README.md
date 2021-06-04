@@ -119,21 +119,32 @@ After downloading & installing WiPP, you can use the installation test project t
 First, go to the project directory:
 `cd WiPP/projects/installation_test`
 
-Now run WiPP peak picking using the following command, adjusting the number of cores using the inline parameter -n as appropriate.
+Now run WiPP peak picking using one of the two following commands:
 
-`../../run_WiPP.sh pp -n 1`
+To run the job **externally** on a high compute cluster (HPC), use the inline parameter `-x`
+e.g.: `../../run_WiPP.sh pp -x`
 
-Note: Using a single core, the run should complete in slightly over 1 hour and use 6G of memory.
+*Please see the [user guide](documentation/USERGUIDE.md) for additional information on HPC parameters*
 
-When the peak picking run is done, first check whether the system out logging messages end with the following lines, confirming the job 
-successfully completed all steps:
+To run the job **locally**, set the number of cores (CPUs) using the inline parameter `-n <CORES>`
+e.g. To use 1 core, run: `../../run_WiPP.sh pp -n 1 2>&1 | tee my_test.log`
+
+*Note: Using a single core, the run should complete in ~1 hour and use 6G of memory*
+
+To monitor the progress of your job, check the file with the system out logging messages:
+  * For jobs run **externally (on HPC)*, this file is in the `slurm_log/` subdirectory and ends with the scheduler job number.  
+e.g. `slurm_log/wipp_pp_installation_test-3089255.log`
+  * For jobs run **locally**, this file is the log where you redirected sysout and stdout e.g.  
+`my_test.log` in example above
+
+When the peak picking job has successfully completed all steps, the sysout log will end with the following lines. 
 ```
 Finished job 0.
 48 of 48 steps (100%) done
 Complete log: <$path to snakemake log file>
 ```
 
-And finally, run the following commands to identify any differences between your output and the expected results:
+To confirm your results are correct, run the following commands to identify any differences between your output and the expected results:
 ```
 diff 04_Final_results/all__final.csv expected_output/all__final.csv
 diff 04_Final_results/all__final.msp expected_output/all__final.msp
@@ -152,11 +163,21 @@ cd ./projects/example_project
 ```
 
 ### Generate training data
-From there, you can now run the first part of the pipeline, the generation of the training data.
-You can adjust the number of cores using the inline paramter `-n <CORES>`:
+From there, you can now run the first part of the pipeline, the generation of the training data, using one of the two following options:
+
+To run the job **externally** on a high compute cluster (HPC), use the inline parameter `-x`
 ```bash
-../../run_WiPP.sh tr -n 4 
+../../run_WiPP.sh tr -x
 ```
+
+*Please see the [user guide](documentation/USERGUIDE.md) for additional information on HPC parameters*
+
+To run the job **locally**, adjust the number of cores (CPUs) using the inline parameter `-n <CORES>`
+e.g. To use 4 cores, run: 
+```bash
+../../run_WiPP.sh tr -n 4 2>&1 | tee my_training.log
+```
+
 > ### Note
 > Running this for the first time takes a while: another conda environment is created
 
@@ -169,11 +190,23 @@ The script opens a simple visualization tool using the default pdf viewer, and w
 Once you have annotated the required amount of peaks for each algorithm (only 25 for the example project), the tool will automatically close.
 You are now ready to launch the last part of the pipeline.
 
-### Do the actual peack picking
+### Do the actual peak picking
 Many sequential substeps are in fact happening during this final step of the pipeline such as classifier hyperparameter optimisation, peak detection algorithms parameter optimisation, peak detection on the full dataset, output classification and result integration.
-Run it with the following command and adjust the number of cores using the inline parameter `-n <CORES>`:
+
+
+Run peak picking using one of the following two options:
+
+To run the job **externally** on a high compute cluster (HPC), use the inline parameter `-x`
 ```bash
-../../run_WiPP.sh pp -n 4
+../../run_WiPP.sh pp -x
+```
+
+*Please see the [user guide](documentation/USERGUIDE.md) for additional information on HPC parameters*
+
+To run the job **locally**, adjust the number of cores (CPUs) using the inline parameter `-n <CORES>`
+e.g. To use 4 cores, run:
+```bash
+../../run_WiPP.sh pp -n 4 2>&1 | tee my_peakpicking.log
 ```
 
 > ### Note

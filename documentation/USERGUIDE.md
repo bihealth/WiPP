@@ -292,16 +292,23 @@ A .csv/.msp pair is available for every biological condition as well as all samp
 
 ## Run **WiPP** on an HPC
 
-This section is dedicated to advanced users who wish to set up **WiPP** on a computing cluster for routine use. We strongly encourage you to consult your system administrator to assist you in this task.
+This section is dedicated to advanced users who wish to set up **WiPP** on a computing cluster for routine use. 
 
-**WiPP** optimization procedure requires a lot of computing power. Here, we will go through a simple example on how to run the pipeline on an HPC. Please be aware that these instructions are only given as guidelines and should be adjusted to the system used.
+Running **WiPP** on a cluster requires the user to be logged into an HPC node with access to a SLURM scheduler. (i.e. jobs are submitted using 
+`sbatch`)
 
-We are currently working on making this configuration simple for everybody. More information will come soon. 
+To submit a job to the HPC scheduler include the `-x` flag, plus two additional optional parameters:
+  * -x, --external : Submit the job to the scheduler using `sbatch` (REQUIRED)
+  * -g <GIGS>, --gigs-per-cpu <GIGS> : Used to set the `sbatch` parameter `--mem-per-cpu` (OPTIONAL: default 6) 
+  * -n <NODES>, --nodes <NODES> : Used to set the `sbatch` parameter `--cpus-per-task` (OPTIONAL: default 4)
 
+e.g.
+```bash
+cd projects/my_project
+../../run_WiPP.sh pp -x -g 10 -n 7
+```
 
+Once your job is running on the cluster, the system out logging messages are written to the file `slurm_log/wipp_<pipeline-step>_<project-name>_<cluster-job-number>.log`  
+e.g. `projects/my_project/slurm_log/wipp_pp_installation_test-3089255.log`
 
-
-
-
-
-
+*For information on how to monitor running jobs or troubleshoot scheduling errors, please refer to your local HPC user documentation*
