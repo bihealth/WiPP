@@ -121,29 +121,40 @@ First, go to the project directory:
 
 Now run WiPP peak picking using one of the two following commands:
 
-To run the job **externally** on a high compute cluster (HPC), use the inline parameter `-x`
-e.g.: `../../run_WiPP.sh pp -x`
+To run the job **externally** on a high compute cluster (HPC), use the inline parameter `-x`  
+e.g.
+```bash
++-> ../../run_WiPP.sh pp -x
+```
+
+*The cluster job should complete in around 40 minutes.*
 
 *Please see the [user guide](documentation/USERGUIDE.md) for additional information on HPC parameters*
 
-To run the job **locally**, set the number of cores (CPUs) using the inline parameter `-n <CORES>`
-e.g. To use 1 core, run: `../../run_WiPP.sh pp -n 1 2>&1 | tee my_test.log`
+To run the job **locally**, set the number of cores (CPUs) using the inline parameter `-n <CORES>`  
+e.g. To use 1 core, run:
+```bash
+../../run_WiPP.sh pp -n 1 2>&1 | tee my_test.log
+```
 
-*Note: Using a single core, the run should complete in ~1 hour and use 6G of memory*
+*Using a single core, the local job should complete in around 1 hour and use 6G of memory.*
+
+### Monitoring your jobs
 
 To monitor the progress of your job, check the file with the system out logging messages:
-  * For jobs run **externally (on HPC)*, this file is in the `slurm_log/` subdirectory and ends with the scheduler job number.  
+  * For jobs run **externally on HPC**, this file is in the `slurm_log/` subdirectory and ends with the scheduler job number.  
 e.g. `slurm_log/wipp_pp_installation_test-3089255.log`
-  * For jobs run **locally**, this file is the log where you redirected sysout and stdout e.g.  
-`my_test.log` in example above
+  * For jobs run **locally**, this file is the log where you redirected sysout and stdout when the job was submitted.  
+e.g. `my_test.log` in example above
 
-When the peak picking job has successfully completed all steps, the sysout log will end with the following lines. 
+When the peak picking job has successfully completed all steps, the sysout log will end with the following lines: 
 ```
 Finished job 0.
 48 of 48 steps (100%) done
 Complete log: <$path to snakemake log file>
 ```
 
+### Confirming correctness of installation test results
 To confirm your results are correct, run the following commands to identify any differences between your output and the expected results:
 ```
 diff 04_Final_results/all__final.csv expected_output/all__final.csv
@@ -172,7 +183,7 @@ To run the job **externally** on a high compute cluster (HPC), use the inline pa
 
 *Please see the [user guide](documentation/USERGUIDE.md) for additional information on HPC parameters*
 
-To run the job **locally**, adjust the number of cores (CPUs) using the inline parameter `-n <CORES>`
+To run the job **locally**, adjust the number of cores (CPUs) using the inline parameter `-n <CORES>`  
 e.g. To use 4 cores, run: 
 ```bash
 ../../run_WiPP.sh tr -n 4 2>&1 | tee my_training.log
@@ -210,7 +221,12 @@ e.g. To use 4 cores, run:
 ```
 
 > ### Note
-> As you annotated a very small amount of peaks, your classifier is likely not to be accurate. For this reason, we provide a trained classifier. In order to use this example classifier, please uncomment the line `path: example_classifier` (by removing the `#` symbol) in the `classifier` block of the `config.yaml` file. You can follow the same procedure for your data if you want to use a specific classifier for several projects. Please note that the example classifier is provided to help you test the tool and is specific to the test data, do not use it for your own project.
+> As you annotated a very small amount of peaks, your classifier is likely not to be accurate. For this reason, we provide a trained classifier. 
+> In order to use this example classifier, please uncomment the line  
+> `# path: example_classifier` 
+> (by removing the `#` symbol) in the `classifier` block of the `config.yaml` file. 
+> You can follow the same procedure for your data if you want to use a specific classifier for several projects. 
+> *The example classifier is provided to help you test WiPP and is specific to the test data, **do not use it for your own project.***
 
 
 ## Running your own project
@@ -277,10 +293,10 @@ Follow the same steps as in the [example_project](#running-a-test-project).
 
 ### Results
 
-All result files are created in a new subfolder named 04_Final_results. 
+All result files are created in a new subfolder named `04_Final_results/` 
 
 Two types of results are available, first a csv file (wide format) contains the feature table, every row represent a peak and each column a specific information such as the retention time, retention index or the spectrum (peak mz:peak area) for a specific sample. Missing peaks are represented by missing values in the corresponding sample column.
 
 The second output is a .msp file which contains the spectra of every peak reported in the .csv file and can be used for identification purposes (Using a dedicated GC-MS peak identification tool).
 
-A .csv/.msp pair is available for every biological condition as well as all samples together.
+A pair of `*.csv and `*.msp` files is available for every biological condition, as well as all samples combined together.

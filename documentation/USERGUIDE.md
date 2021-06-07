@@ -51,7 +51,7 @@ That is all the basics you need to know about **WiPP**! Now let's get started wi
 > If you want to know more about the underlying data processing such as the scoring function, baseline correction or optimization, take a look at the [paper available]() (empty link until paper published).
 
 
-## What data do WiPP supports?
+## What data types does WiPP support?
 
 **WiPP** can be used to analyse high or low-resolution GC-MS data acquired using an Electron impact ionization source and best performs with a minimum acquisition rate of 10 scans/s.
 
@@ -295,12 +295,12 @@ A .csv/.msp pair is available for every biological condition as well as all samp
 This section is dedicated to advanced users who wish to set up **WiPP** on a computing cluster for routine use. 
 
 Running **WiPP** on a cluster requires the user to be logged into an HPC node with access to a SLURM scheduler. (i.e. jobs are submitted using 
-`sbatch`)
+the `sbatch` command)
 
 To submit a job to the HPC scheduler include the `-x` flag, plus two additional optional parameters:
-  * -x, --external : Submit the job to the scheduler using `sbatch` (REQUIRED)
-  * -g <GIGS>, --gigs-per-cpu <GIGS> : Used to set the `sbatch` parameter `--mem-per-cpu` (OPTIONAL: default 6) 
-  * -n <NODES>, --nodes <NODES> : Used to set the `sbatch` parameter `--cpus-per-task` (OPTIONAL: default 4)
+  * **-x, --external** : Submit the job to the scheduler using `sbatch` *(REQUIRED)*
+  * **-g <GIGS>, --gigs-per-cpu <GIGS>** : Value is passed to the scheduler via the `sbatch` parameter `--mem-per-cpu <GIGS>G` *(OPTIONAL: default 6)*
+  * **-n <NODES>, --nodes <NODES>** : Value is passed to the scheduler via the `sbatch` parameter `--cpus-per-task <NODES>` *(OPTIONAL: default 4)*
 
 e.g.
 ```bash
@@ -308,7 +308,8 @@ cd projects/my_project
 ../../run_WiPP.sh pp -x -g 10 -n 7
 ```
 
-Once your job is running on the cluster, the system out logging messages are written to the file `slurm_log/wipp_<pipeline-step>_<project-name>_<cluster-job-number>.log`  
-e.g. `projects/my_project/slurm_log/wipp_pp_installation_test-3089255.log`
+Once your job is running on the cluster, the system out logging messages are written to the file  
+`slurm_log/wipp_<pipeline-step>_<project-name>_<cluster-job-number>.log` e.g.  
+`projects/my_project/slurm_log/wipp_pp_installation_test-3089255.log`
 
-*For information on how to monitor running jobs or troubleshoot scheduling errors, please refer to your local HPC user documentation*
+*For information on how to monitor jobs running on the cluster or troubleshoot scheduling errors, please refer to your local HPC user documentation*
