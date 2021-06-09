@@ -372,4 +372,4 @@ represented by missing values in the corresponding sample column.
 The second output is a `*.msp` file which contains the spectra of every peak reported in the `*.csv` file and can be used as input for a 
 dedicated GC-MS peak identification tool.
 
-A pair of `*.csv and `*.msp` files is available for every biological condition, as well as all samples combined together.
+A pair of `*.csv` and `*.msp` files is available for every biological condition, as well as all samples combined together.
