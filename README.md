@@ -5,21 +5,52 @@
 
 This document aims to help you get started with **WiPP** and brings you through the minimum requirements to install, set up, and run the software. However, we strongly recommend you to read through the [complete user guide](documentation/USERGUIDE.md) for a full and advanced use of **WiPP**.
 
+## Table of contents
+* [License](#license)
+* [Operating System Compatibility](#os)
+* [Requirements](#requirements)
+* [Installation](#installation)
+    * [Installing miniconda](#installing-conda)
+        * [Changing your conda version](#managing-conda)
+    * [Installing WiPP](#installing-wipp)
+* [Running the WiPP installation test](#running-install-test)
+    * [Monitoring your jobs](#monitoring-jobs)
+    * [Confirming correctness of installation test results](#correctness-install-test)
+* [Running the WiPP example project](#running-example-test)
+    * [Generating training data](#training-example-test)
+    * [Annotating detected peaks](#annotating-example-test)
+    * [Running peak picking](#peak-picking-example-test)
+        * [Using a trained classifier](#using-trained-classifier)
+* [Running your own project](#running-user-project)
+    * [Input files](#input-files)
+    * [Pipeline settings](#pipeline-settings)
+    * [Running the pipeline](#running-pipeline)
+    * [Results](#results)
+
+---
+
+<a name="license"></a>
 ## License
 **WiPP** v 1.0 is release under the [MIT License](LICENSE.md).
 
+<a name="os"></a>
 ## Operating System Compatibility
 **WiPP** has been tested successfully on:
 - CentOS 7
 - Ubuntu 20
 - Ubuntu 16
 
+<a name="requirements"></a>
 ## Requirements
 - conda version 4.3.34 - 4.9.2 ([Managing Conda](#managing-conda))
 - libnetcdf11 ([Ubuntu packages website](https://packages.ubuntu.com/xenial/libs/libnetcdf11))
 
+---
+
+<a name="installation"></a>
 ## Installation
 
+<a name="installing-conda"></a>
 ### Installing miniconda
 *(This section can be skipped if you already have the correct version of conda installed)*
 
@@ -101,7 +132,7 @@ conda 4.10.1
 To change your conda to version 4.9.2, run `conda install conda=4.9.2`
 and press `enter` (or `y`) when asked if you want to proceed to install & upgrade/downgrade the listed packages.
 
-
+<a name="installing-wipp"></a>
 ### Installing WiPP
 
 You can install **WiPP** using the following command:
@@ -112,6 +143,9 @@ make
 ```
 Now you are ready to run **WiPP**!
 
+---
+
+<a name="running-install-test"></a>
 ## Running the WiPP installation test
 
 After downloading & installing WiPP, you can use the installation test project to confirm your installation of WiPP runs as expected.
@@ -139,6 +173,7 @@ e.g. To use 1 core, run:
 
 *Using a single core, the local job should complete in around 1 hour and use 6G of memory.*
 
+<a name="monitoring-jobs"></a>
 ### Monitoring your jobs
 
 To monitor the progress of your job, check the file with the system out logging messages:
@@ -154,8 +189,10 @@ Finished job 0.
 Complete log: <$path to snakemake log file>
 ```
 
-### Confirming correctness of installation test results
-To confirm your results are correct, run the following commands to identify any differences between your output and the expected results:
+<a name="correctness-install-test"></a>
+### Confirming correctness of results
+To confirm the final results you've generated in `installation_test/` are correct, run the following commands to identify any differences 
+between your output and the expected results:
 ```
 diff 04_Final_results/all__final.csv expected_output/all__final.csv
 diff 04_Final_results/all__final.msp expected_output/all__final.msp
@@ -165,15 +202,21 @@ diff 04_Final_results/Liver__final.msp expected_output/Liver__final.msp
 
 If your installation ran as expected, all 4 `diff` commands should return nothing (0 lines).
 
-## Running a test project
+---
 
-### Change into example_project directory
-The pipeline needs to be run from the project directory (the one that contains the `config.yaml` file). Use the following command to change to the example project directory:
-```bash
-cd ./projects/example_project
-```
+<a name="running-example-test"></a>
+## Running the WiPP example project
 
-### Generate training data
+> ### Note
+> WiPP analysis must be run from the `project/your-project` directory (i.e. the dir that contains the `config.yaml` file used for analysis)
+> 
+> Use the following command to change to the `example_project/` directory, (relative to the `WiPP` base directory):
+> ```bash
+> cd ./projects/example_project
+> ```
+
+<a name="training-example-test"></a>
+### Generating training data
 From there, you can now run the first part of the pipeline, the generation of the training data, using one of the two following options:
 
 To run the job **externally** on a high compute cluster (HPC), use the inline parameter `-x`
@@ -192,7 +235,8 @@ e.g. To use 4 cores, run:
 > ### Note
 > Running this for the first time takes a while: another conda environment is created
 
-### Annotate detected peaks
+<a name="annotating-example-test"></a>
+### Annotating detected peaks
 Run the following command to start the annotation:
 ```bash
 ../../run_WiPP.sh an
@@ -201,9 +245,9 @@ The script opens a simple visualization tool using the default pdf viewer, and w
 Once you have annotated the required amount of peaks for each algorithm (only 25 for the example project), the tool will automatically close.
 You are now ready to launch the last part of the pipeline.
 
-### Do the actual peak picking
+<a name="peak-picking-example-test"></a>
+### Running peak picking
 Many sequential substeps are in fact happening during this final step of the pipeline such as classifier hyperparameter optimisation, peak detection algorithms parameter optimisation, peak detection on the full dataset, output classification and result integration.
-
 
 Run peak picking using one of the following two options:
 
@@ -220,19 +264,42 @@ e.g. To use 4 cores, run:
 ../../run_WiPP.sh pp -n 4 2>&1 | tee my_peakpicking.log
 ```
 
+<a name="using-trained-classifier"></a>
+#### Using a trained classifier 
+
+> ### General Note
+> To use the same classifier for several projects, update your `config.yaml` to include the path to the relevant `01_Classifier` directory that contains the training result. e.g.  
+> 
+> ```
+> classifier:
+>   path: ../orig_training_project/01_Classifier
+> ```
+
+In the `example_project` you annotated a very small number of peaks, so the resulting classifier is likely not to be accurate. For this reason, 
+we provide a trained example classifier.
+
 > ### Note
-> As you annotated a very small amount of peaks, your classifier is likely not to be accurate. For this reason, we provide a trained classifier. 
-> In order to use this example classifier, please uncomment the line  
-> `# path: example_classifier` 
-> (by removing the `#` symbol) in the `classifier` block of the `config.yaml` file. 
-> You can follow the same procedure for your data if you want to use a specific classifier for several projects. 
-> *The example classifier is provided to help you test WiPP and is specific to the test data, **do not use it for your own project.***
+> The example classifier is provided to help you test WiPP and is specific to the test data, do not use it for your own project.
 
+In order to use this example classifier, please uncomment (remove the "`# `") before `path` in the `classifier` block of the `config.yaml` file 
+like this:
+```
+classifier:
+  SVM: True
+  RF: False
+  path: example_classifier
+  validation_set_size: 0.2
+  cross_validation_splits: 3
+```
 
+---
+
+<a name="running-user-project"></a>
 ## Running your own project
 To run your own project, you have to do some prelimitary work and decisions, which is described in this section.
 To actually run **WiPP** subsequently, you have to follow the same steps as in the example_project.
 
+<a name="input-files"></a>
 ### Input files
 Let's create and structure the directory for your data files. **WiPP** supports mzML, mzData and NetCDF file formats.
 
@@ -263,6 +330,7 @@ The `Optimization_samples` directory is similar to the `Training_samples` direct
 > ### Note
 > The sample files used for training and optimization should still be present in your sample directories, the files in the `Training_samples` and `Optimization_samples` directories are only copies.
 
+<a name="pipeline-settings"></a>
 ### Pipeline settings
 
 This tutorial only shows the minimum requirements to run the pipeline, to learn more about all pipeline settings, have a look at the pipeline settings section of the [complete user guide](documentation/USERGUIDE.md).
@@ -285,18 +353,23 @@ That's all for the basic settings, you are now ready to run the pipeline.
 > ### Note
 > Keep in mind that those parameters are the only one required to run the pipeline, but there is a lot more you can do to precisely tune the pipeline. Have a read through the [complete user guide](documentation/USERGUIDE.md) to learn more.
  
+<a name="running-pipeline"></a>
 ### Running the pipeline
-Follow the same steps as in the [example_project](#running-a-test-project).
+Follow the same instructions, as outlined in the steps for the [example_project](#running-example-test).
 
 > ### Note
 > Peak annotation usually takes several hours (1200 peaks per algorithm by default), but you only need to do that once per instrument/protocol. Once trained, the SVM classifiers can be reused on other datasets generated with the same instrument and data acquisition method.
 
+<a name="results"></a>
 ### Results
 
 All result files are created in a new subfolder named `04_Final_results/` 
 
-Two types of results are available, first a csv file (wide format) contains the feature table, every row represent a peak and each column a specific information such as the retention time, retention index or the spectrum (peak mz:peak area) for a specific sample. Missing peaks are represented by missing values in the corresponding sample column.
+Two types of results are available, first a `*.csv` file (wide format) contains the feature table, every row represent a peak and each column a 
+specific information such as the retention time, retention index or the spectrum (peak mz:peak area) for a specific sample. Missing peaks are 
+represented by missing values in the corresponding sample column.
 
-The second output is a .msp file which contains the spectra of every peak reported in the .csv file and can be used for identification purposes (Using a dedicated GC-MS peak identification tool).
+The second output is a `*.msp` file which contains the spectra of every peak reported in the `*.csv` file and can be used as input for a 
+dedicated GC-MS peak identification tool.
 
 A pair of `*.csv and `*.msp` files is available for every biological condition, as well as all samples combined together.
