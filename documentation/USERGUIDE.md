@@ -19,9 +19,9 @@ Guitton Y, Beule D, Kirwan J. WiPP: Workflow for Improved Peak Picking for Gas C
 * [How does WiPP work?](#how-it-works)
 * [Tell me more about WiPP](#more-about-wipp)
     * [Workflow overview](#workflow-overview)
-        1. [Training data generation](#overview-tr)
-        2. [Classifier training and parameter optimisation](#overview-an)
-        3. [High confidence peak set generation](#overview-pp)
+        * [1. Training data generation](#overview-tr)
+        * [2. Classifier training and parameter optimisation](#overview-an)
+        * [3. High confidence peak set generation](#overview-pp)
 * [What data types does WiPP support?](#input-data-types)
 * [How do I use WiPP?](#how-to-use)
     * [Installation and requirements](#installation)
@@ -32,7 +32,7 @@ Guitton Y, Beule D, Kirwan J. WiPP: Workflow for Improved Peak Picking for Gas C
         * [(Step 1) Training data generation](#running-tr)
         * [(Step 2) Training data annotation](#running-an)
         * [(Step 3) Optimisation and high confidence peak set generation](#running-pp)
-        * [Running WiPP on HPC](#running-hpc)
+        * [Running WiPP on an HPC cluster](#running-hpc)
 * [Final output](#final-output)
 * [Tool architecture](#tool-architecture)
     * [Input directory](#input-dir)
@@ -53,14 +53,18 @@ Using **WiPP** also requires some basic understanding of GC-MS analyses and the 
 <a name="how-it-works"></a>
 ## How does **WiPP** work?
 
-The tool uses machine learning approaches to classify the quality of the peaks detected by existing methods (currently XCMS CentWave & XCMS MatchedFilter) to optimise the parameter settings of each individual algorithms. The workflow then classifies and combine peaks identified by individual algorithms to generate a final high-quality peak set, automatically removing false positive peaks.
+**WiPP** uses machine learning approaches to classify the quality of peaks detected in GC-MS data, by optimizing the parameter settings 
+for the **XCMS CentWave** and **XCMS MatchedFilter** algorithms. The workflow then classifies and combines the peaks identified by 
+individual algorithms to generate a final high-quality peak set, automatically removing false positive peaks.
 
 <a name="more-about-wipp"></a>
 ## Tell me more about WiPP
 
 **WiPP** is implemented in Python 3 using **[Snakemake](https://snakemake.readthedocs.io/en/stable/)**, a reproducible and scalable workflow management system, and distributed via github under the [MIT licence](../LICENSE.md).
 
-**WiPP** offers a modular design to allow the addition of other existing peak picking algorithm and can be run on a local computer as well as on an HPC. It has been tested on Ubuntu 16 (Xenial Xerus) and CentOS 7.6.1810 (Core) operating systems.
+**WiPP** offers a modular design to allow the addition of other existing peak picking algorithm and can be run on a local computer or on a High 
+Performance Computing cluster (HPC). It has been tested on Ubuntu 16 (Xenial Xerus), Ubuntu 20 (Focal Fossa) and CentOS Linux 7 (Core) operating 
+systems.
 
 <a name="workflow-overview"></a>
 ### Workflow overview
@@ -98,7 +102,8 @@ publication](http://dx.doi.org/10.3390/metabo9090171).*
 <a name="input-data-types"></a>
 ## What data types does WiPP support?
 
-**WiPP** can be used to analyse high or low-resolution GC-MS data acquired using an Electron impact ionization source and best performs with a minimum acquisition rate of 10 scans/s.
+**WiPP** can be used to analyse high- or low-resolution GC-MS data acquired using an Electron Impact ionization source and best performs with a 
+minimum acquisition rate of 10 scans/s.
 
 The supported file formats for input data are mzML, mzData and NetCDF.
 
@@ -122,14 +127,14 @@ Now that you have an overview of what **WiPP** really is, let's learn how to ins
 * [Bioconda](https://conda.io/en/latest/miniconda.html) (aka conda, miniconda)
 
 > ### Note
-> If you have freshly installed conda, remember to `source ~/.bashrc` or open a new terminal before installing WiPP.
+> If you have freshly installed conda, remember to run `source ~/.bashrc` or open a new terminal before installing **WiPP**.
 
 <a name="conda-version"></a>
 ##### Changing your conda version
-WiPP requires conda versions 4.3 to 4.9, and version 4.9.2 is preferred.
-Conda versions < 4.4 are not supported for external analysis (i.e. running on the cluster)
+**WiPP** requires conda to be between version 4.3 and 4.9 (inclusive) -- conda version 4.9.2 is preferred.
+Conda versions < 4.4 are not supported for external analysis (i.e. running on an HPC cluster)
 
-You can check the version of conda you have currently installed, by running `conda --version`
+You can check the version of conda you have currently installed, by running `conda --version`  
 e.g.
 
 ```
@@ -159,13 +164,13 @@ You are now all set up and ready to run **WiPP**!
 In this section, we will see how to run the pipeline. Once everything is in place, only a few commands are required to run **WiPP** and 
 generate our high confidence peak set from the raw data.
 
-We recommend using the `example_project/` to test the software before jumping to the analysis of your own data.
+We recommend using `projects/example_project/` to test **WiPP** before jumping to the analysis of your own data.
 
-If you prefer to start right away with your own data, please first read the [Input directory](#input-dir) to learn how to organize 
-your input data files.
+If you prefer to start right away with your own data, please refer to the [Input directory](#input-dir) section in this document to learn how to 
+organize the directories containing your raw data files.
 
-You may also wish to skip ahead and learn more about the [pipeline settings](#pipeline-settings) before continuing with the instructions on how 
-to run **WiPP**.
+You may also wish to skip ahead and learn more about the [pipeline settings](#pipeline-settings) before continuing with the instructions below on 
+how to run **WiPP**.
 
 
 <a name="running-tr"></a>
@@ -214,7 +219,7 @@ Run it with the following command and adjust the number of cores using the inlin
 ```
 
 <a name="running-hpc"></a>
-#### Running WiPP on HPC
+#### Running WiPP on an HPC cluster
 
 This section is meant to provide additional information for advanced users who wish to set up **WiPP** on a computing cluster for routine use. 
 
@@ -224,23 +229,27 @@ the `sbatch` command)
 > ### Note
 > The **WiPP** annotation step (`an`) is interactive and thus cannot be run externally on HPC.
 
-To submit a **WiPP** training (`tr`) or peak picking (`pp`) job to the HPC scheduler, the parameters must include the `-x` flag, plus two 
-additional optional parameters:
-  * **-x, --external** : Submit this job to the cluster scheduler *(REQUIRED)*
-  * **-g <GIGS>, --gigs-per-cpu <GIGS>** : Value is passed to the scheduler via the `sbatch` parameter `--mem-per-cpu <GIGS>G` *(OPTIONAL: default 6)*
-  * **-n <NODES>, --nodes <NODES>** : Value is passed to the scheduler via the `sbatch` parameter `--cpus-per-task <NODES>` *(OPTIONAL: default 4)*
-
+To submit a **WiPP** training (`tr`) or peak picking (`pp`) job to the HPC scheduler, include the `-x` flag (plus optional parameters):  
 e.g.
 ```bash
-cd projects/my_project
+../../run_WiPP.sh tr -x
+```
+```bash
 ../../run_WiPP.sh pp -x -g 10 -n 7
 ```
 
-Once your job is running on the cluster, the system-out message logs are written to the file  
-`slurm_log/wipp_<pipeline-step>_<project-name>_<cluster-job-number>.log` e.g.  
+HPC job parameter details:
+  * **-x, --external** : Submit this job to the cluster scheduler *(REQUIRED)*
+  * **-g <GIGS>, --gigs-per-cpu <GIGS>** : Value is passed to the scheduler via the `sbatch` parameter `--mem-per-cpu <GIGS>G` *(OPTIONAL: default 6)*
+  * **-n <NODES>, --nodes <NODES>** : Value is passed to the scheduler via the `sbatch` parameter `--cpus-per-task <NODES>` *(OPTIONAL: default 4)*  
+
+When a **WiPP** job is run on the cluster, a `slurm_log/` subfolder is created to store the 
+`wipp_<pipeline-step>_<project-name>_<cluster-job-number>.log` files containing the job's sys-out messages.  
+e.g.  
 `projects/my_project/slurm_log/wipp_pp_installation_test-3089255.log`
 
-*For information on how to monitor cluster jobs or troubleshoot scheduling errors, please refer to your local HPC user documentation.*
+> ### Note
+> *For information on how to monitor cluster jobs or troubleshoot scheduling errors, please refer to your local HPC user documentation.*
 
 <a name="final-output"></a>
 ## Final output
@@ -259,20 +268,21 @@ A `*.csv/*.msp` pair is available for every biological condition as well as all 
 <a name="tool-architecture"></a>
 ## Tool architecture
 
-Now that you have your data ready in [one of the three supported formats](#input-data-types), and **WiPP** is [installed](#installation), let see 
-how the WiPP subdirectories are organised:
+Once you have your GC-MS data ready in [one of the three supported formats](#input-data-types), and **WiPP** is [installed](#installation), let's 
+see how the WiPP **subdirectories** are organised:
 
 ```
 WiPP/
-	bin/
-	documentation/
-	envs/
-	lib/
-		python/
-		R/
-	pp_configs/
-	projects/
-		example_project/
+├── bin/
+├── documentation/
+├── envs/
+├── lib/
+│   ├── python/
+│   └──  R/
+├── pp_configs/
+└── projects/
+    ├── example_project/
+    └── installation_test/
 ```
 
 The `bin` folder contains the snakemake files, which describe the entire workflow and how it should be run. You do not need to touch this unless you want to modify the workflow or implement new steps. This folder also contains an optional file to define the cluster settings, we will tell you more about that later.
@@ -291,64 +301,78 @@ At this stage, you probably noticed that we are missing the data input directory
 Here is an overview of the input directory and how it should be structured.
 
 > ### Note
-> You can name your input folder the way you want, for clarity purposes we will just call it `Input_folder` here. 
+> You can name your input folder the way you want, for clarity purposes we will just call it `input_folder` here. 
 
 ```
-Input_folder/
-	condition_1/
-	condition_2/
-	...
-	condition_n/
-	Training_samples/
-	Optimization_samples/
-	Wash/
+input_folder/
+├── condition_1/
+├── condition_2/
+├── ...
+├── condition_n/
+├── training_samples/
+├── optimization_samples/
+└── wash/
 ```
 
-All the files of your dataset should be structure into subdirectory corresponding to the biological conditions of your study (here, condition 1 to n).
+All the files of your dataset should be structured into subdirectories corresponding to the biological conditions of your study.
+You may follow the above the example, and simply call them `condition_1/` to `condition_n`, or use more descriptive names.
 
-The `Wash` directory is optional but if present should contain the wash or blank sample files. Here we assume that these samples contain the alkanes that are used for Retention Index calculation. If you do not have blank samples containing alkanes,  you can ignore this folder as it is the case in our `example_project`.
+The `wash/` directory is optional -- if present should contain the wash or blank sample files. 
+Here we assume that these samples contain the alkanes that are used for Retention Index calculation. 
+If you do not have blank samples containing alkanes, you can omit this folder (as is the case in our `example_project`).
 
-The other 2 directories should contain a subset of the data which will be used for the  training of the classifier and parameter optimization.
+The `training_samples` directory should contain the subset of your data to be used for the training of the classifier.
+It should contain a subset of the pooled samples or a representative subset of the samples of each biological condition. 
+We recommend using a minimum of 2 sample for each condition.
 
-The `Training_samples` directory should contain a subset of the pooled samples or a representative subset of the samples of each biological condition. We recommend using a minimum of 2 sample for each condition.
-
-The `Optimization_samples` directory is similar to the `Training_samples` directory, just make sure to choose different samples as we do not want the parameters to be optimized using the same data the classifier was trained on.
+The `optimization_samples` directory should contain the subset of your data be used for parameter optimization.
+Samples should be selected in a manner similar to the `training_samples` directory, but in order for the algorithms to effectively learn your 
+data set **it is important to choose different samples for training & optimization**
 
 > ### Note
-> The sample files used for training and optimization should still be present in your sample directories, the files in the `Training_samples` and `Optimization_samples` directories are only copies.
+> The sample files used for training and optimization should still be present in your sample directories, the files in the `training_samples` and 
+`optimization_samples` directories are only copies.
 
 <a name="pipeline-settings"></a>
 ## Pipeline settings
 
-All general pipeline settings are stored in the `config.yaml` of the individual project folder and need to be created for every new project. You can find an example in the `example_project` directory that you will find here:
+All general pipeline settings are stored in the `config.yaml` file located in `projects/` subfolder you are analysing. 
+This config file needs to be created for every new project. 
+e.g. for the `example_project`, you will find the file here:
 
 ```
 WiPP/
-	projects/
-		example_project/
-			config.yaml
+└── projects/
+    └── example_project/
+        └── config.yaml
 ```
 
-There are three parameter sections, the first one relates to the general pipeline parameters, the second section focuses on data training step of the pipeline, and the last section concerns the optimization part of the pipeline.
+The `config.yaml` contains three parameter sections:
+* the first one relates to the general pipeline parameters, 
+* the second section focuses on data training step of the pipeline, 
+* and the last section concerns the optimization part of the pipeline
 
 <a name="general-params"></a>
 ### General parameters
 
-The first block of parameters look like this:
+The first block of parameters looks like this:
+"""
+static_data:
+  absolute_path:
+  high_resolution:
+  cores:
+  peak_min_width:
+  peak_min_mz:
+  merging_RT_tol:
+"""
 
-* static\_data
-	* absolute\_path
-	* high\_resolution
-	* cores
-	* peak\_min\_width
-	* peak\_min\_mz
-	* merging\_RT\_tol
-
-The `absolute_path` parameter should point to your input data folder where your raw data, training data and optimization data is stored (and potentially your wash sample files). This is the folder we named `Input_data` in the previous section.
+The `absolute_path` parameter should point to your input data folder where your raw data, training data and optimization data is stored (and 
+potentially your wash sample files). This is the folder we named `input_data` in the previous section.
 
 `high_resolution` should be `True` or `False` depending on your data type.
 
-`cores` defines the number of cores to use. If no value is given, the pipeline will use the maximum number of cores available on your computer. This value can also be set as an inline parameter when running the workflow.
+`cores` defines the number of cores to use. If no value is given, the pipeline will use the maximum number of cores available on your computer.
+This value can also be set as an inline parameter when running the workflow.
 
 `peak_min_width` represents the minimum width of the peaks in second to be detected. The default value is `0.5`.
 
@@ -356,25 +380,36 @@ The `absolute_path` parameter should point to your input data folder where your 
 
 ***
 
-The `algorithms` block gives you the opportunity to define the peak picking algorithms you want to use. Currently, two algorithms are available (XCMS CentWave and MatchedFilter), and you can choose to use either or both of them by setting them to `True` or `False`.
+The `algorithms:` block gives you the opportunity to define the peak picking algorithms you want to use. 
+Currently, two algorithms are available (XCMS CentWave and MatchedFilter), and you can choose to use either or both of them by setting them to `True` or `False`.
 
 ***
 
-The `default_config` parameters block allows you to set the path where the default algorithm parameters are stored. Unless you are making your own changes to the tool, you can leave this section as it is.
+The `default_configs:` parameters block allows you to set the path where the default algorithm parameters are stored. Unless you are making your 
+own changes to the tool, you can leave this section as it is.
 
 ***
 
-Finally, the `RT_tol` parameter in the `merging` parameter block is the time tolerance given in second for peaks detected in the same sample with different parameters/algorithms to be considered the same and reported as one. The default value is `0.2`.
+Finally, parameter block 
+"""
+merging:
+  RT_tol:
+"""
+is the time tolerance given in second for peaks detected in the same sample with different parameters/algorithms to be considered the same and reported as one. The default value is `0.2`.
 
 ***
 
 <a name="tr-params"></a>
 ### Training data parameters
 
-The `training_data-general` block allows you to define the location of your `training_samples` as a relative path from your `Input_folder` directory.
-The second parameter is the number of `plots_per_samples` to be generated, these plots will then be used for manual annotation and generation of the training dataset. The default value is `200`.
+The `training_data-general` block allows you to define the location of your `training_samples` as a relative path from your `input_folder` 
+directory.
+The second parameter is the number of `plots_per_samples` to be generated, these plots will then be used for manual annotation and generation of 
+the training dataset. The default value is `200`.
 
-Within the `training_data-params` parameter block, you can specify the algorithm parameters you would like to use to generate your training data by defining a list for every entry. The possible combinations will be automatically evaluated by **WiPP** and used to generate the training dataset. The default values give a wide range of parameter sets and should fit most data.
+Within the `training_data-params` parameter block, you can specify the algorithm parameters you would like to use to generate your training data 
+by defining a list for every entry. The possible combinations will be automatically evaluated by **WiPP** and used to generate the training dataset.
+The default values give a wide range of parameter sets and should fit most data.
 
 > ### Note
 > The more parameters you set, the longer it will take to run! Consult your MS expert to make an informed decision on the best parameter range to run.
@@ -384,29 +419,47 @@ Within the `training_data-params` parameter block, you can specify the algorithm
 <a name="opt-params"></a>
 ### Optimization parameters
 
-In the `classifier` block, set `SVM` and `RF` (support vector machines and Random forests) to `True` or `False` depending on the model you want to use. If both are set to `True`, only the best performing estimator will be conserved. `SVM` have shown better performance on all datasets tested so far. The `validation_set_size` and `cross_validation_splits` parameters, respectively set to `0.2` and `3` by default are used for hyperparameter optimization and to prevent overfitting. We recommend using the default values if you are not familiar with cross-validation procedure to evaluate estimator performance.
+In the `classifier` block, set `SVM` and `RF` (support vector machines and Random forests) to `True` or `False` depending on the model you want 
+to use. If both are set to `True`, only the best performing estimator will be conserved. 
+`SVM` have shown better performance on all datasets tested so far. 
+The `validation_set_size` and `cross_validation_splits` parameters, respectively set to `0.2` and `3` by default are used for hyperparameter 
+optimization and to prevent overfitting. We recommend using the default values if you are not familiar with cross-validation procedure to 
+evaluate estimator performance.
 
-The `optimization-general` block allows you to define the location of your `optimization_samples ` as a relative path from your `Input_folder` directory.
+The `optimization-general` block allows you to define the location of your `optimization_samples ` as a relative path from your `input_folder` 
+directory.
 
-The `optimization-score` is a list of parameters used to find the optimal peak picking algorithm parameter set. Default parameters have shown to give appropriate results for both high and low-resolution data, but you can change them according to your needs.
+The `optimization-score` is a list of parameters used to find the optimal peak picking algorithm parameter set. Default parameters have shown to 
+give appropriate results for both high and low-resolution data, but you can change them according to your needs.
 
-Finally, the last settings, `grid_search-params` concern the grid search range for the parameter optimization. Same as the training data, you can limit the range if you already familiar with the data produced by your GCMS experiment.
-
-***
-
-The following parameter block is dedicated to retention index, if you do not use alkanes, you can remove or skip this section altogether as the default value is `False`.
-
-* retention_index
-	* wash
-	* alkanes
-
-The `wash` parameter requires the relative path from the `Input_folder` to the `wash_folder`. In our example, this parameter would look like this `./Wash`
-
-The `alkanes` parameter is the list of alkanes that should be used for retention index calculation. The parameter should be a comma separated list of the number of carbons for each alkanes as follow `"c10","c12","c16",[...],"c32","c34"`.
+Finally, the last settings, `grid_search-params` concern the grid search range for the parameter optimization. Same as the training data, you can 
+limit the range if you already familiar with the data produced by your GCMS experiment.
 
 ***
 
-Finally, the `alignment` block allows you to define the parameters for cross sample alignment. The appropriate parameter of `RI_tol` or `RT_tol` 
-will be used depending on your project. `RT_tol` should be defined in seconds. The `min_similarity` parameter corresponds to the minimum spectra 
-similarity for peaks to be aligned, and the `min_samples` parameter defines the minimum number of samples (as a ratio) for a peak to be present in order to be reported.
+The following parameter block is dedicated to retention index, if you do not use alkanes, you can remove or skip this section altogether as the 
+default value is `False`.
 
+"""
+retention_index:
+  wash:
+  alkanes:
+"""
+
+The `wash:` parameter requires the relative path from the `input_folder` to the `wash_folder`. In our example, this parameter would look like 
+this `./wash`
+
+The `alkanes` parameter is the list of alkanes that should be used for retention index calculation. 
+The parameter should be a comma separated list of the number of carbons for each alkane.
+e.g.  
+`"c10","c12","c16",[...],"c32","c34"`
+
+***
+
+Finally, the `alignment:` block allows you to define the parameters for cross sample alignment. The parameter `RI_tol` or `RT_tol` 
+will be used as appropriate, depending on your project. 
+
+The value of`RT_tol` should be defined in seconds. 
+
+The `min_similarity:` parameter corresponds to the minimum spectra similarity for peaks to be aligned, and the `min_samples:` parameter defines 
+the minimum number of samples (as a ratio) to be present in order for a peak to be reported.

@@ -258,7 +258,7 @@ To run the job **externally** on a high compute cluster (HPC), use the inline pa
 
 *Please see the [user guide](documentation/USERGUIDE.md) for additional information on HPC parameters*
 
-To run the job **locally**, adjust the number of cores (CPUs) using the inline parameter `-n <CORES>`
+To run the job **locally**, adjust the number of cores (CPUs) using the inline parameter `-n <CORES>`  
 e.g. To use 4 cores, run:
 ```bash
 ../../run_WiPP.sh pp -n 4 2>&1 | tee my_peakpicking.log
