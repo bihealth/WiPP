@@ -43,7 +43,6 @@ This document aims to help you get started with **WiPP** and brings you through 
 <a name="requirements"></a>
 ## Requirements
 - conda version 4.3.34 - 4.9.2 ([Managing Conda](#managing-conda))
-- libnetcdf11 ([Ubuntu packages website](https://packages.ubuntu.com/xenial/libs/libnetcdf11))
 
 ---
 
@@ -139,6 +138,7 @@ You can install **WiPP** using the following command:
 ```bash
 git clone https://github.com/bihealth/WiPP.git
 cd WiPP
+git checkout -b dev origin/dev
 make
 ```
 Now you are ready to run **WiPP**!
@@ -153,9 +153,19 @@ After downloading & installing WiPP, you can use the installation test project t
 First, go to the project directory:
 `cd WiPP/projects/installation_test`
 
-Now run WiPP peak picking using one of the two following commands:
+Next, run the following 3 commands to create `*.pkl` files for all the input data:  
+```bash
++-> conda activate WiPP
 
-To run the job **externally** on a high compute cluster (HPC), use the inline parameter `-x`  
++-> ../../lib/python/create_pkl_from_sampledata_cdf.py data/Liver/f_20210113_RF_0002_16.cdf data/Liver/f_20210113_RF_0002_27.cdf data/Liver/f_20210113_RF_0002_33.cdf data/optimization_samples/f_20210113_RF_0002_28.cdf data/Wash/f_20210113_RF_0002_63.cdf
+
++-> conda deactivate
+```
+*This step will take about 10 minutes to complete.*
+
+Now you are ready to run **WiPP peak picking** using one of the two following commands:
+
+To run the job **externally** on a high compute cluster **(HPC)**, use the inline parameter `-x`  
 e.g.
 ```bash
 +-> ../../run_WiPP.sh pp -x
