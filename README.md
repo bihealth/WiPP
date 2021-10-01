@@ -10,6 +10,7 @@ This document aims to help you get started with **WiPP** and brings you through 
 * [Operating System Compatibility](#os)
 * [Requirements](#requirements)
 * [Installation](#installation)
+    * [Notes for Linux terminal beginners](#linux-beginners)
     * [Installing miniconda](#installing-conda)
         * [Changing your conda version](#managing-conda)
     * [Installing WiPP](#installing-wipp)
@@ -49,25 +50,33 @@ This document aims to help you get started with **WiPP** and brings you through 
 <a name="installation"></a>
 ## Installation
 
+<a name="linux-beginners"></a>
+### Notes for Linux terminal beginners 
+In the installation instructions below, `$ ` represents the **command line prompt**, so the command you type starts *after* this prompt.
+
+(If your system uses a different symbol for the command line prompt, that's fine :)
+
+Lines that do not start with `$ ` contain information that is written to your terminal screen as a result of running the command.
+
 <a name="installing-conda"></a>
 ### Installing miniconda
 *(This section can be skipped if you already have the correct version of conda installed)*
 
 In a linux terminal, get the python version currently in use on your system. e.g.  
 ```
-+-> python --version
+$ python --version
 Python 3.7.1
 ```
 
 In a browser, open: `https://docs.conda.io/en/latest/miniconda.html#linux-installers`  
 and right-click on the "Miniconda3 Linux 64-bit" link correspondig to your python version, and select "Copy link address".
 
-In your linux terminal, go to your tmp directory, type `wget ` and paste the miniconda URL from your clipboard, and then hit enter to initiate 
+In your linux terminal, go to your temp directory, type `wget ` and paste the miniconda URL from your clipboard, and then hit enter to initiate 
 downloading the miniconda installer. e.g.
 
 ```
-+-> cd ~/scratch/tmp
-+-> wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86.sh
+$ cd ~/scratch/tmp
+$ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86.sh
 --2021-05-06 17:27:49--  https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86.sh
 Resolving repo.anaconda.com (repo.anaconda.com)... 104.16.130.3, 104.16.131.3, 2606:4700::6810:8303, ...
 Connecting to repo.anaconda.com (repo.anaconda.com)|104.16.130.3|:443... connected.
@@ -78,7 +87,7 @@ Saving to: ‘Miniconda3-latest-Linux-x86.sh’
 100%[============================================================>] 65,741,329  60.3MB/s   in 1.0s
 
 2021-05-06 17:27:50 (60.3 MB/s) - ‘Miniconda3-latest-Linux-x86.sh’ saved [65741329/65741329]
-+-> 
+$  
 ```
 
 You now need to create a new text file, we'll call it `miniconda_hash.txt`, where:
@@ -90,13 +99,13 @@ e.g. `f387eded3fa4ddc3104b7775e62d59065b30205c2758a8b86b4c27144adafcc4  Minicond
 
 Now run `sha256sum` using the above file to confirm your download was successful. e.g.  
 ```
-+-> sha256sum -c miniconda_hash.txt
+$ sha256sum -c miniconda_hash.txt
 Miniconda3-latest-Linux-x86.sh: OK
 ```
 
 Now initiate the miniconda installation by running the installer, e.g. 
 ```
-+-> bash Miniconda3-latest-Linux-x86.sh
+$ bash Miniconda3-latest-Linux-x86.sh
 ```
 and follow the prompts on the installer screens.
 
@@ -106,7 +115,7 @@ Once the installation is complete, all newly created terminals will automaticall
 
 To initialize miniconda in any terminals that are already open, run:
 ```
-+-> source ~/.bashrc
+$ source ~/.bashrc
 ```
 
 To test your miniconda installation, run the command `conda list` in your terminal.
@@ -124,11 +133,14 @@ You can check the version of conda you have currently installed, by running `con
 e.g.  
 
 ```
-+-> conda --version
+$ conda --version
 conda 4.10.1
 ```
 
-To change your conda to version 4.9.2, run `conda install conda=4.9.2`
+To change your conda to version 4.9.2, run  
+```
+$ conda install conda=4.9.2
+```
 and press `enter` (or `y`) when asked if you want to proceed to install & upgrade/downgrade the listed packages.
 
 <a name="installing-wipp"></a>
@@ -155,11 +167,11 @@ First, go to the project directory:
 
 Next, run the following 3 commands to create `*.pkl` files for all the input data:  
 ```bash
-+-> conda activate WiPP
+conda activate WiPP
 
-+-> ../../lib/python/create_pkl_from_sampledata_cdf.py data/Liver/f_20210113_RF_0002_16.cdf data/Liver/f_20210113_RF_0002_27.cdf data/Liver/f_20210113_RF_0002_33.cdf data/optimization_samples/f_20210113_RF_0002_28.cdf data/Wash/f_20210113_RF_0002_63.cdf
+../../lib/python/create_pkl_from_sampledata_cdf.py data/Liver/f_20210113_RF_0002_16.cdf data/Liver/f_20210113_RF_0002_27.cdf data/Liver/f_20210113_RF_0002_33.cdf data/optimization_samples/f_20210113_RF_0002_28.cdf data/Wash/f_20210113_RF_0002_63.cdf
 
-+-> conda deactivate
+conda deactivate
 ```
 *This step will take about 10 minutes to complete.*
 
@@ -168,14 +180,14 @@ Now you are ready to run **WiPP peak picking** using one of the two following co
 To run the job **externally** on a high compute cluster **(HPC)**, use the inline parameter `-x`  
 e.g.
 ```bash
-+-> ../../run_WiPP.sh pp -x
+../../run_WiPP.sh pp -x
 ```
 
 *The cluster job should complete in around 40 minutes.*
 
 *Please see the [user guide](documentation/USERGUIDE.md) for additional information on HPC parameters*
 
-To run the job **locally**, set the number of cores (CPUs) using the inline parameter `-n <CORES>`  
+Alternatively, to run the job **locally**, set the number of cores (CPUs) using the inline parameter `-n <CORES>`  
 e.g. To use 1 core, run:
 ```bash
 ../../run_WiPP.sh pp -n 1 2>&1 | tee my_test.log
